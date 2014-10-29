@@ -423,7 +423,7 @@ def load_MDA_universe():
 # core functions
 #=========================================================================================
 
-def calculate_density(box_dim):
+def calculate_density(f_index, box_dim):
 	
 	global nb_x
 	global nb_y
@@ -462,7 +462,7 @@ def calculate_density(box_dim):
 			#transform coordinates into index of bins (the fanciness is to handle coords smaller/bigger than 0/U.dim)
 			tmp_coord[:,0] = np.minimum(np.floor(tmp_coord[:,0]/float(delta_x)), np.remainder(np.floor(tmp_coord[:,0]/float(delta_x)),args.sx))
 			tmp_coord[:,1] = np.minimum(np.floor(tmp_coord[:,1]/float(delta_y)), np.remainder(np.floor(tmp_coord[:,1]/float(delta_y)),args.sx))
-			tmp_coord[:,2] = np.minimum(np.floor(tmp_coord[:,2]/float(delta_x)), np.remainder(np.floor(tmp_coord[:,2]/float(delta_z)),args.sz))
+			tmp_coord[:,2] = np.minimum(np.floor(tmp_coord[:,2]/float(delta_z)), np.remainder(np.floor(tmp_coord[:,2]/float(delta_z)),args.sz))
 			tmp_coord = tmp_coord.astype(int)
 			for qi in range(0,qi_nb):
 				charge_density[tmp_coord[qi,0],tmp_coord[qi,1],tmp_coord[qi,2]] += qi_val	
@@ -482,14 +482,15 @@ def calculate_stats():
 	
 	#calculate coords and leaflets positions
 	#---------------------------------------
-	#TO DO: calculate the center of the coords (not much but cleaner)
 	upper_avg = np.average(upper)
 	lower_avg = np.average(lower)
 	z_middle = (upper_avg+lower_avg) / float(2)
 	upper_avg -= z_middle
 	lower_avg -= z_middle
-	coords_x = np.linspace(0,U.dimensions[0],args.sx)
-	coords_z = np.linspace(0,U.dimensions[2],args.sz) - z_middle
+	tmp_coords_x = np.linspace(0,U.dimensions[0],args.sx+1)
+	tmp_coords_z = np.linspace(0,U.dimensions[2],args.sz+1)
+	coords_x = tmp_coords_x[0:args.sx] + (tmp_coords_x[1]-tmp_coords_x[0])/float(2) - U.dimensions[0]/float(2)
+	coords_z = tmp_coords_z[0:args.sz] + (tmp_coords_z[1]-tmp_coords_z[0])/float(2) - z_middle
 
 	#calculate average charge in each voxel
 	#--------------------------------------
@@ -507,16 +508,16 @@ def calculate_stats():
 					tmp_dist[nxx,nyy,nzz] = pot_conv * f_factor * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
 
 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
-	for nx in range(nb_x, args.sx-nb_x):
-		for ny in range(nb_y, args.sx-nb_y):
-			for nz in range(nb_z, args.sz-nb_z):
+	for nx in range(0, args.sx):
+		for ny in range(0, args.sx):
+			for nz in range(0, args.sz):
 				#display progress
 				progress = '\r -processing voxel (' + str(nx) + ',' + str(ny) + ',' + str(nz) + ')       '  
 				sys.stdout.flush()
 				sys.stdout.write(progress)							
 
-				#retrieve neighbours charge matrix
-				tmp_q = charge_density[range(nx-nb_x,nx+nb_x),:,:][:,range(ny-nb_y,ny+nb_y),:][:,:,range(nz-nb_z,nz+nb_z)]
+				#retrieve neighbours charge matrix				
+				tmp_q = charge_density[np.remainder(np.arange(nx-nb_x,nx+nb_x),args.sx),:,:][:,np.remainder(np.arange(ny-nb_y,ny+nb_y),args.sx),:][:,:,np.remainder(np.arange(nz-nb_z,nz+nb_z),args.sz)]
 
 				#multiply elements with distance matrix
 				tmp_pot = np.multiply(tmp_q,tmp_dist)
@@ -702,7 +703,6 @@ def density_graph_potential():
 			
 	#1D profile
 	#----------
-	
 	#filenames
 	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.svg'
 
@@ -740,7 +740,6 @@ def density_graph_potential():
 
 	#2D profile
 	#----------
-	
 	#filenames
 	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_2D.svg'
 
@@ -748,14 +747,20 @@ def density_graph_potential():
 	fig = plt.figure(figsize=(8, 6.2))
 	fig.suptitle("Electrostatic profile slice")
 
+	#rotate data so that the x is horizontal and z vertical after imshow plotting
+	potential_2D_oriented = np.zeros((args.sz,args.sx))
+	for nx in range(0, args.sx):
+		for nz in range(0, args.sz):
+			potential_2D_oriented[nz,nx] = potential_2D[nx,args.sz-1-nz]
+
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(potential_2D)
+	im = plt.imshow(potential_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)])
 	plt.vlines(lower_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashdot')
-	plt.xlabel('z distance to bilayer center ($\AA$)')
-	plt.ylabel('x axis ($\AA$)')
+	plt.xlabel('x ($\AA$)')
+	plt.ylabel('z distance to bilayer center ($\AA$)')
 	
 	#color bar
 	cax = fig.add_axes([0.85, 0.26, 0.025, 0.48])
@@ -764,15 +769,18 @@ def density_graph_potential():
 	cbar.set_label(r'potential (V)')
 		
 	#save figure
-	ax.set_xlim(0, args.sz)
+	ax.set_xlim(min(coords_x), max(coords_x))
+	ax.set_ylim(min(coords_z), max(coords_z))
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
-	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=11))
 	ax.xaxis.labelpad = 20
 	ax.yaxis.labelpad = 20
+	ax.tick_params(axis='x', direction='out')
+	ax.tick_params(axis='y', direction='out')
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.1, right = 0.8)
@@ -809,7 +817,7 @@ else:
 		progress = '\r -processing frame ' + str(f_index+1) + '/' + str(nb_frames_to_process) + ' (every ' + str(args.frames_dt) + ' frame(s) from frame ' + str(f_start) + ' to frame ' + str(f_end) + ' out of ' + str(nb_frames_xtc) + ')      '  
 		sys.stdout.flush()
 		sys.stdout.write(progress)							
-		calculate_density(U.trajectory.ts.dimensions)
+		calculate_density(f_index, U.trajectory.ts.dimensions)
 	print ""
 
 #=========================================================================================
