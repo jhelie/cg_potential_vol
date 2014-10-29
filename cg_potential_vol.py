@@ -250,9 +250,9 @@ else:
 	os.mkdir(args.output_folder)
 	filename_log = os.getcwd() + '/' + str(args.output_folder) + '/cg_potential.log'
 	output_log = open(filename_log, 'w')		
-	output_log.write("[cg_potential v" + str(version_nb) + "]\n")
+	output_log.write("[cg_potential_vol v" + str(version_nb) + "]\n")
 	output_log.write("\nThis folder and its content were created using the following command:\n\n")
-	tmp_log="python cg_potential.py"
+	tmp_log="python cg_potential_vol.py"
 	for c in sys.argv[1:]:
 		tmp_log += " " + c
 	output_log.write(tmp_log + "\n")
