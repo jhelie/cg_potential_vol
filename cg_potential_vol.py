@@ -91,8 +91,8 @@ Option	      Default  	Description
 Density profile options
 -----------------------------------------------------
 --charges		: definition of charged particles, see 'DESCRIPTION'  [TO DO]
---sz	[200] 	: number of slizes along z
---sx	[200] 	: number of slizes along x and y
+--sz		[200] 	: number of slizes along z
+--sx		[200] 	: number of slizes along x and y
 
 Electrostatic potential
 -----------------------------------------------------
@@ -240,9 +240,9 @@ elif not os.path.isfile(args.xtcfilename):
 #=========================================================================================
 if args.output_folder == "no":
 	if args.xtcfilename == "no":
-		args.output_folder = "cg_potential_" + args.grofilename[:-4]
+		args.output_folder = "cg_potential_vol_" + args.grofilename[:-4]
 	else:
-		args.output_folder = "cg_potential_" + args.xtcfilename[:-4]
+		args.output_folder = "cg_potential_vol_" + args.xtcfilename[:-4]
 if os.path.isdir(args.output_folder):
 	print "Error: folder " + str(args.output_folder) + " already exists, choose a different output name via -o."
 	sys.exit(1)
@@ -431,6 +431,8 @@ def calculate_density(box_dim):
 	global delta_x
 	global delta_y
 	global delta_z	
+	global upper
+	global lower
 
 	#define bins
 	tmp_bins_x = np.linspace(0,box_dim[0],args.sx+1)
@@ -439,9 +441,10 @@ def calculate_density(box_dim):
 	delta_x = tmp_bins_x[1]-tmp_bins_x[0]
 	delta_y = tmp_bins_y[1]-tmp_bins_y[0]	
 	delta_z = tmp_bins_z[1]-tmp_bins_z[0]
-	nb_x = int(floor(args.rc*10/float(delta_x))+1)
-	nb_y = int(floor(args.rc*10/float(delta_y))+1)
-	nb_z = int(floor(args.rc*10/float(delta_z))+1)
+	
+	nb_x = int(np.floor(args.rc*10/float(delta_x))+1)
+	nb_y = int(np.floor(args.rc*10/float(delta_y))+1)
+	nb_z = int(np.floor(args.rc*10/float(delta_z))+1)
 
 	#store leaflets z position
 	upper[f_index] = upper_sele.centerOfGeometry()[2]
@@ -460,9 +463,8 @@ def calculate_density(box_dim):
 			tmp_coord[:,2] = np.floor(tmp_coord[:,2]/float(delta_z))
 			tmp_coord = tmp_coord.astype(int)
 			for qi in range(0,qi_nb):
-				charge_density[tmp_coord[qi,0],tmp_coord[qi,1],tmp_coord[qi,2]] += qi_val	
+				charge_density[min(args.sx-1,tmp_coord[qi,0]), min(args.sx-1,tmp_coord[qi,1]),min(args.sz-1,tmp_coord[qi,2])] += qi_val	
 	return
-
 def calculate_stats():
 	global coords_x
 	global coords_z
@@ -483,31 +485,68 @@ def calculate_stats():
 	z_middle = (upper_avg+lower_avg) / float(2)
 	upper_avg -= z_middle
 	lower_avg -= z_middle
-	coords_x = np.histogram(U.selectAtoms("all").coordinates()[:,0], np.range(0,U.dimensions[0],args.sx+1)[0] - z_middle
-	coords_z = np.histogram(U.selectAtoms("all").coordinates()[:,2], np.range(0,U.dimensions[2],args.sz+1)[0] - z_middle
+	coords_x = np.linspace(0,U.dimensions[0],args.sx)
+	coords_z = np.linspace(0,U.dimensions[2],args.sz) - z_middle
 
 	#calculate average charge in each voxel
 	#--------------------------------------
 	charge_density = charge_density / float(nb_frames_to_process)
 
-	#calculate potential
-	#-------------------
+# 	#calculate potential
+# 	#-------------------
+# 	#debug
+# 	print nb_x, nb_y, nb_z
+# 
+# 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
+# 	for nx in range(0, args.sx):
+# 		#debug
+# 		print nx
+# 		for ny in range(0, args.sx):
+# 			#debug
+# 			print " ", ny
+# 			for nz in range(0, args.sz):
+# 				#debug
+# 				print "  ", nz
+# 
+# 				#retrieve charge in current voxel
+# 				tmp_q = charge_density[nx,ny,nz]
+# 				#calculate its potential influence on neighbouring voxels
+# 				for nxx in range(nx-nb_x,nx+nb_x+1):
+# 					if nxx > 0 and nxx < args.sx:
+# 						for nyy in range(ny-nb_y,ny+nb_y+1):
+# 							if nyy > 0 and nyy < args.sx:
+# 								for nzz in range(nz-nb_z,nz+nb_z+1):
+# 									if nzz > 0 and nzz < args.sz:
+# 										r = np.sqrt(((nxx-nx)*delta_x)**2 + ((nyy-ny)*delta_y)**2 + ((nzz-nz)*delta_z)**2) / float(10)
+# 										if r>0:
+# 											potential[nxx,nyy,nzz] += pot_conv * f_factor * tmp_q * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
+
+	#calculate distance matrix
+	tmp_dist = np.ones((2*nb_x,2*nb_y,2*nb_z))
+	for nxx in range(0,2*nb_x+1):
+		for nyy in range(0,2*nb_y+1):
+			for nzz in range(0,2*nb_z+1):
+				r = np.sqrt(((nxx-nb_x)*delta_x)**2 + ((nyy-nb_y)*delta_y)**2 + ((nzz-nb_z)*delta_z)**2) / float(10)	
+				if r > 0 and r < args.rc:
+					tmp_dist[nxx,nyy,nzz] = pot_conv * f_factor * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
+
 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
-	for nx in range(0, args.sx):
-		for ny in range(0, args.sx):
-			for nz in range(0, args.sz):
-				#retrieve charge in current voxel
-				tmp_q = charge_density[nx,ny,nz]
-				#calculate its potential influence on neighbouring voxels
-				for nxx in range(nx-nb_x,nx+nb_x+1):
-					if nxx > 0 and nxx < args.sx:
-						for nyy in range(ny-nb_y,ny+nb_y+1):
-							if nyy > 0 and nyy < args.sx:
-								for nzz in range(nz-nb_z,nz+nb_x+1):
-									if nzz > 0 and nzz < args.sz:
-										r = np.sqrt(((nxx-nx)*delta_x)**2 + ((nyy-ny)*delta_y)**2 + ((nzz-nz)*delta_z)**2) / float(10)
-										if r>0:
-											potential[nxx,nyy,nzz] += pot_conv * f_factor * tmp_q * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
+	for nx in range(nb_x, args.sx-nb_x):
+		#debug
+		print nx
+		for ny in range(nb_y, args.sx-nb_y):
+			#debug
+			print " ", ny
+			for nz in range(nb_z, args.sz-nb_z):
+				#retrieve neighbours charge matrix
+				tmp_q = charge_density[range(nx-nb_x,nx+nb_x),:,:][:,range(ny-nb_y,ny+nb_y),:][:,:,range(nz-nb_z,nz+nb_z)]
+
+				#multiply elements with distance matrix
+				tmp_pot = np.multiply(tmp_q,tmp_dist)
+
+				#add sum of contributions to current voxel
+				potential[nx,ny,nz] = np.sum(tmp_pot)
+
 
 	#calculate average potential
 	#---------------------------
@@ -530,10 +569,46 @@ def calculate_stats():
 # outputs
 #=========================================================================================
 
+#xvg files
 def density_write_charges():
 	
 	#open files
-	filename_xvg = os.getcwd() + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.xvg'
+	filename_xvg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charge_1D.xvg'
+	output_xvg = open(filename_xvg, 'w')
+	
+	#general header
+	output_xvg.write("# [electrostatic potential profile - written by cg_potential_vol v" + str(version_nb) + "]\n")
+	output_xvg.write("#  -> nb of slices x and y: " + str(args.sx) + "\n")
+	output_xvg.write("#  -> nb of slices z: " + str(args.sz) + "\n")
+	output_xvg.write("#  -> slices volume: " + str(round(delta_x*delta_y*delta_z,2)) + ") (Angstrom3)\n")
+	output_xvg.write("# nb of frames which contributed to this profile:\n")
+	output_xvg.write("# -> weight = " + str(nb_frames_to_process) + "\n")
+	
+	#xvg metadata
+	output_xvg.write("@ title \"Charge densisty along z\"\n")
+	output_xvg.write("@ xaxis label \"z distance to bilayer center (Angstrom)\"\n")
+	output_xvg.write("@ yaxis label \"charge density ($e^{-1}.\AA^{3}$)\"\n")
+	output_xvg.write("@ autoscale ONREAD xaxes\n")
+	output_xvg.write("@ TYPE XY\n")
+	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
+	output_xvg.write("@ legend on\n")
+	output_xvg.write("@ legend box on\n")
+	output_xvg.write("@ legend loctype view\n")
+	output_xvg.write("@ legend 0.98, 0.8\n")
+	output_xvg.write("@ legend length 1\n")
+	output_xvg.write("@ s0 legend \"total\"\n")
+	
+	#data
+	for nz in range(0,args.sz):
+		results = str(coords_z[nz]) + "	" + "{:.6e}".format(charge_density_1D[nz])
+		output_xvg.write(results + "\n")	
+	output_xvg.close()
+		
+	return
+def density_write_potential():
+	
+	#open files
+	filename_xvg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.xvg'
 	output_xvg = open(filename_xvg, 'w')
 	
 	#general header
@@ -566,47 +641,12 @@ def density_write_charges():
 
 		
 	return
-def density_write_potential():
-	
-	#open files
-	filename_xvg = os.getcwd() + '/' + str(args.xtcfilename[:-4]) + '_charge_1D.xvg'
-	output_xvg = open(filename_xvg, 'w')
-	
-	#general header
-	output_xvg.write("# [electrostatic potential profile - written by cg_potential_vol v" + str(version_nb) + "]\n")
-	output_xvg.write("#  -> nb of slices x and y: " + str(args.sx) + "\n")
-	output_xvg.write("#  -> nb of slices z: " + str(args.sz) + "\n")
-	output_xvg.write("#  -> slices volume: " + str(round(delta_x*delta_y*delta_z,2)) + ") (Angstrom3)\n")
-	output_xvg.write("# nb of frames which contributed to this profile:\n")
-	output_xvg.write("# -> weight = " + str(nb_frames_to_process) + "\n")
-	
-	#xvg metadata
-	output_xvg.write("@ title \"Charge densisty along z\"\n")
-	output_xvg.write("@ xaxis label \"z distance to bilayer center (Angstrom)\"\n")
-	output_xvg.write("@ yaxis label \"charge density ($e^{-1}.\AA^{3}$)\"\n")
-	output_xvg.write("@ autoscale ONREAD xaxes\n")
-	output_xvg.write("@ TYPE XY\n")
-	output_xvg.write("@ view 0.15, 0.15, 0.95, 0.85\n")
-	output_xvg.write("@ legend on\n")
-	output_xvg.write("@ legend box on\n")
-	output_xvg.write("@ legend loctype view\n")
-	output_xvg.write("@ legend 0.98, 0.8\n")
-	output_xvg.write("@ legend length 1\n")
-	output_xvg.write("@ s0 legend \"total\"\n")
-	
-	#data
-	for nz in range(0,args.sz):
-		results = str(coords_z[nz]) + "	" + "{:.6e}".format(charge_1D[nz])
-		output_xvg.write(results + "\n")	
-	output_xvg.close()
-		
-	return
 
+#graphs
 def density_graph_charges():
 		
 	#filenames
-	filename_svg = os.getcwd() + '/' + str(args.output_folder) + '/density_profile_charges.svg'
-	filename_png = os.getcwd() + '/' + str(args.output_folder) + '/density_profile_charges.png'
+	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charges_1D.svg'
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
@@ -619,8 +659,8 @@ def density_graph_charges():
 	plt.vlines(upper_avg, min(charge_density_1D), max(charge_density_1D), linestyles = 'dashed')
 	plt.vlines(0, min(charge_density_1D), max(charge_density_1D), linestyles = 'dashdot')
 	plt.hlines(0, min(coords_z), max(coords_z))
-	plt.xlabel('z distance to bilayer center [$\AA$]')
-	plt.ylabel('average charge density [$e.\AA^{-3}$]')
+	plt.xlabel('z distance to bilayer center ($\AA$)')
+	plt.ylabel('average charge density ($e.\AA^{-3}$)')
 	
 	#save figure
 	ax.set_xlim(min(coords_z), max(coords_z))
@@ -636,7 +676,47 @@ def density_graph_charges():
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.15, right = 0.85)
-	fig.savefig(filename_png)
+	fig.savefig(filename_svg)
+	plt.close()
+
+	#2D profile
+	#----------
+	
+	#filenames
+	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charges_2D.svg'
+
+	#create figure
+	fig = plt.figure(figsize=(8, 6.2))
+	fig.suptitle("Electrostatic profile slice")
+
+	#plot data
+	ax = fig.add_subplot(111)
+	im = plt.imshow(charge_density_2D)
+	plt.vlines(lower_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
+	plt.vlines(upper_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
+	plt.vlines(0, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashdot')
+	plt.xlabel('z distance to bilayer center ($\AA$)')
+	plt.ylabel('x axis ($\AA$)')
+	
+	#color bar
+	cax = fig.add_axes([0.85, 0.26, 0.025, 0.48])
+	cbar = fig.colorbar(im, orientation='vertical', cax=cax)
+	cbar.ax.tick_params(axis='y', direction='out')
+	cbar.set_label(r'charge density ($e.\AA^{-3}$)')
+		
+	#save figure
+	ax.set_xlim(0, args.sz)
+	ax.spines['top'].set_visible(False)
+	ax.spines['right'].set_visible(False)
+	ax.xaxis.set_ticks_position('bottom')
+	ax.yaxis.set_ticks_position('left')
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
+	ax.xaxis.labelpad = 20
+	ax.yaxis.labelpad = 20
+	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
+	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
+	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.1, right = 0.8)
 	fig.savefig(filename_svg)
 	plt.close()
 
@@ -647,7 +727,7 @@ def density_graph_potential():
 	#----------
 	
 	#filenames
-	filename_svg = os.getcwd() + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.svg'
+	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.svg'
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
@@ -685,7 +765,7 @@ def density_graph_potential():
 	#----------
 	
 	#filenames
-	filename_svg = os.getcwd() + '/' + str(args.xtcfilename[:-4]) + '_potential_2D.svg'
+	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_2D.svg'
 
 	#create figure
 	fig = plt.figure(figsize=(8, 6.2))
@@ -693,7 +773,7 @@ def density_graph_potential():
 
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(data_2D)
+	im = plt.imshow(potential_2D)
 	plt.vlines(lower_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashdot')
@@ -707,7 +787,7 @@ def density_graph_potential():
 	cbar.set_label(r'potential (V)')
 		
 	#save figure
-	ax.set_xlim(0, dims[2])
+	ax.set_xlim(0, args.sz)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
@@ -733,21 +813,13 @@ def density_graph_potential():
 #=========================================================================================
 set_charges()
 load_MDA_universe()
-
-#update global variables
-bins_labels = np.zeros(args.slices)
-thicks = np.zeros(nb_frames_to_process)
-vols = np.zeros(nb_frames_to_process)
 upper = np.zeros(nb_frames_to_process)
 lower = np.zeros(nb_frames_to_process)
-bins = np.zeros((nb_frames_to_process, args.slices+1))
-potential = np.zeros((nb_frames_to_process, args.slices))
-charge_density = np.zeros((nb_frames_to_process, args.slices))
 
 #=========================================================================================
 # generate data
 #=========================================================================================
-print "\nCalculating electrosatic potential..."
+print "\nCalculating charge density..."
 #case: structure only
 #--------------------
 if args.xtcfilename=="no":
@@ -766,6 +838,7 @@ else:
 #=========================================================================================
 # process data
 #=========================================================================================
+print "\nCalculating electrostatic potential..."
 calculate_stats()
 
 #=========================================================================================
