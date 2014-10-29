@@ -456,14 +456,16 @@ def calculate_density(box_dim):
 		qi_nb = tmp_q_sele.numberOfAtoms()
 		qi_val = charges_groups[q]["value"]
 		if qi_nb > 0:
+			#get coordinates
 			tmp_coord = tmp_q_sele.coordinates()
-			#transform coordinates into index of bins
-			tmp_coord[:,0] = np.floor(tmp_coord[:,0]/float(delta_x))
-			tmp_coord[:,1] = np.floor(tmp_coord[:,1]/float(delta_y))
-			tmp_coord[:,2] = np.floor(tmp_coord[:,2]/float(delta_z))
+
+			#transform coordinates into index of bins (the fanciness is to handle coords smaller/bigger than 0/U.dim)
+			tmp_coord[:,0] = np.minimum(np.floor(tmp_coord[:,0]/float(delta_x)), np.remainder(np.floor(tmp_coord[:,0]/float(delta_x)),args.sx))
+			tmp_coord[:,1] = np.minimum(np.floor(tmp_coord[:,1]/float(delta_y)), np.remainder(np.floor(tmp_coord[:,1]/float(delta_y)),args.sx))
+			tmp_coord[:,2] = np.minimum(np.floor(tmp_coord[:,2]/float(delta_x)), np.remainder(np.floor(tmp_coord[:,2]/float(delta_z)),args.sz))
 			tmp_coord = tmp_coord.astype(int)
 			for qi in range(0,qi_nb):
-				charge_density[min(args.sx-1,tmp_coord[qi,0]), min(args.sx-1,tmp_coord[qi,1]),min(args.sz-1,tmp_coord[qi,2])] += qi_val	
+				charge_density[tmp_coord[qi,0],tmp_coord[qi,1],tmp_coord[qi,2]] += qi_val	
 	return
 def calculate_stats():
 	global coords_x
@@ -479,7 +481,8 @@ def calculate_stats():
 	global charge_density_2D
 	
 	#calculate coords and leaflets positions
-	#-------------------------------------------
+	#---------------------------------------
+	#TO DO: calculate the center of the coords (not much but cleaner)
 	upper_avg = np.average(upper)
 	lower_avg = np.average(lower)
 	z_middle = (upper_avg+lower_avg) / float(2)
@@ -492,37 +495,10 @@ def calculate_stats():
 	#--------------------------------------
 	charge_density = charge_density / float(nb_frames_to_process)
 
-# 	#calculate potential
-# 	#-------------------
-# 	#debug
-# 	print nb_x, nb_y, nb_z
-# 
-# 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
-# 	for nx in range(0, args.sx):
-# 		#debug
-# 		print nx
-# 		for ny in range(0, args.sx):
-# 			#debug
-# 			print " ", ny
-# 			for nz in range(0, args.sz):
-# 				#debug
-# 				print "  ", nz
-# 
-# 				#retrieve charge in current voxel
-# 				tmp_q = charge_density[nx,ny,nz]
-# 				#calculate its potential influence on neighbouring voxels
-# 				for nxx in range(nx-nb_x,nx+nb_x+1):
-# 					if nxx > 0 and nxx < args.sx:
-# 						for nyy in range(ny-nb_y,ny+nb_y+1):
-# 							if nyy > 0 and nyy < args.sx:
-# 								for nzz in range(nz-nb_z,nz+nb_z+1):
-# 									if nzz > 0 and nzz < args.sz:
-# 										r = np.sqrt(((nxx-nx)*delta_x)**2 + ((nyy-ny)*delta_y)**2 + ((nzz-nz)*delta_z)**2) / float(10)
-# 										if r>0:
-# 											potential[nxx,nyy,nzz] += pot_conv * f_factor * tmp_q * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
-
+ 	#calculate potential
+ 	#-------------------
 	#calculate distance matrix
-	tmp_dist = np.ones((2*nb_x,2*nb_y,2*nb_z))
+	tmp_dist = np.zeros((2*nb_x,2*nb_y,2*nb_z))
 	for nxx in range(0,2*nb_x+1):
 		for nyy in range(0,2*nb_y+1):
 			for nzz in range(0,2*nb_z+1):
@@ -532,12 +508,13 @@ def calculate_stats():
 
 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
 	for nx in range(nb_x, args.sx-nb_x):
-		#debug
-		print nx
 		for ny in range(nb_y, args.sx-nb_y):
-			#debug
-			print " ", ny
 			for nz in range(nb_z, args.sz-nb_z):
+				#display progress
+				progress = '\r -processing voxel (' + str(nx) + ',' + str(ny) + ',' + str(nz) + ')       '  
+				sys.stdout.flush()
+				sys.stdout.write(progress)							
+
 				#retrieve neighbours charge matrix
 				tmp_q = charge_density[range(nx-nb_x,nx+nb_x),:,:][:,range(ny-nb_y,ny+nb_y),:][:,:,range(nz-nb_z,nz+nb_z)]
 
@@ -545,7 +522,7 @@ def calculate_stats():
 				tmp_pot = np.multiply(tmp_q,tmp_dist)
 
 				#add sum of contributions to current voxel
-				potential[nx,ny,nz] = np.sum(tmp_pot)
+				potential[nx,ny,nz] += np.sum(tmp_pot)
 
 
 	#calculate average potential
@@ -844,7 +821,7 @@ calculate_stats()
 #=========================================================================================
 # produce outputs
 #=========================================================================================
-print "\nWriting outputs..."
+print "\n\nWriting outputs..."
 density_write_charges()
 density_write_potential()
 density_graph_charges()
