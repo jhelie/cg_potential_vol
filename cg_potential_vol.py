@@ -308,9 +308,9 @@ def set_charges():
 	charges_groups["Na+"]["value"] = 1
 	charges_groups["Na+"]["sele_string"] = "name NA+"
 	
-	charges_groups["Cl-"] = {}
-	charges_groups["Cl-"]["value"] = -1
-	charges_groups["Cl-"]["sele_string"] = "name CL-"
+	charges_groups["CL-"] = {}
+	charges_groups["CL-"]["value"] = -1
+	charges_groups["CL-"]["sele_string"] = "name CL-"
 
 	charges_groups["PO4"] = {}
 	charges_groups["PO4"]["value"] = -1
@@ -441,7 +441,6 @@ def calculate_density(f_index, box_dim):
 	delta_x = tmp_bins_x[1]-tmp_bins_x[0]
 	delta_y = tmp_bins_y[1]-tmp_bins_y[0]	
 	delta_z = tmp_bins_z[1]-tmp_bins_z[0]
-	
 	nb_x = int(np.floor(args.rc*10/float(delta_x))+1)
 	nb_y = int(np.floor(args.rc*10/float(delta_y))+1)
 	nb_z = int(np.floor(args.rc*10/float(delta_z))+1)
@@ -449,7 +448,7 @@ def calculate_density(f_index, box_dim):
 	#store leaflets z position
 	upper[f_index] = upper_sele.centerOfGeometry()[2]
 	lower[f_index] = lower_sele.centerOfGeometry()[2]
-		
+
 	#calculate charge density in each bin
 	for q in charges_groups.keys():
 		tmp_q_sele = charges_groups[q]["sele"]
@@ -486,7 +485,7 @@ def calculate_stats():
 	lower_avg = np.average(lower)
 	z_middle = (upper_avg+lower_avg) / float(2)
 	upper_avg -= z_middle
-	lower_avg -= z_middle
+	lower_avg -= z_middle	
 	tmp_coords_x = np.linspace(0,U.dimensions[0],args.sx+1)
 	tmp_coords_z = np.linspace(0,U.dimensions[2],args.sz+1)
 	coords_x = tmp_coords_x[0:args.sx] + (tmp_coords_x[1]-tmp_coords_x[0])/float(2) - U.dimensions[0]/float(2)
@@ -669,7 +668,7 @@ def density_graph_charges():
 
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(charge_density_2D)
+	im = plt.imshow(charge_density_2D, cmap = matplotlib.cm.jet_r)
 	plt.vlines(lower_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashdot')
@@ -717,17 +716,19 @@ def density_graph_potential():
 	plt.vlines(upper_avg, min(potential_1D), max(potential_1D), linestyles = 'dashed')
 	plt.vlines(0, min(potential_1D), max(potential_1D), linestyles = 'dashdot')
 	plt.hlines(0, min(coords_z), max(coords_z))
+	plt.hlines(0, min(coords_z), max(coords_z))
 	plt.xlabel('z distance to bilayer center ($\AA$)')
 	plt.ylabel('electrostatic potential (V)')
 	
 	#save figure
-	ax.set_xlim(min(coords_z), max(coords_z))
+	#ax.set_xlim(min(coords_z), max(coords_z))
+	ax.set_xlim(-60, 60)
 	#ax.set_ylim(min_density_charges, max_density_charges)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=9))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
 	ax.xaxis.labelpad = 20
 	ax.yaxis.labelpad = 20
@@ -755,7 +756,8 @@ def density_graph_potential():
 
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(potential_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)])
+	#im = plt.imshow(potential_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], cmap = matplotlib.cm.jet_r, vmin = -0.08, vmax = 0.04)
+	im = plt.imshow(potential_2D_oriented[19:140,:], extent = [min(coords_x),max(coords_x),-60,60], cmap = matplotlib.cm.jet_r, vmin = -0.06, vmax = 0.03)
 	plt.vlines(lower_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(potential_2D[:,0]), max(potential_2D[:,0]), linestyles = 'dashdot')
@@ -770,13 +772,14 @@ def density_graph_potential():
 		
 	#save figure
 	ax.set_xlim(min(coords_x), max(coords_x))
-	ax.set_ylim(min(coords_z), max(coords_z))
+	#ax.set_ylim(min(coords_z), max(coords_z))
+	ax.set_ylim(-60,60)
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
 	ax.yaxis.set_ticks_position('left')
-	ax.xaxis.set_major_locator(MaxNLocator(nbins=5))
-	ax.yaxis.set_major_locator(MaxNLocator(nbins=11))
+	ax.xaxis.set_major_locator(MaxNLocator(nbins=9))
+	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
 	ax.xaxis.labelpad = 20
 	ax.yaxis.labelpad = 20
 	ax.tick_params(axis='x', direction='out')
