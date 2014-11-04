@@ -565,8 +565,7 @@ def calculate_stats():
 	for nz in range(0, args.sz):
 		potential_1D[nz] = np.average(potential[:,:,nz])
 		for nx in range(0, args.sx):
-			#potential_2D[nx,nz] = np.average(potential[nx,:,nz])
-			potential_2D[nx,nz] = np.average(potential[nx,20:60,nz])
+			potential_2D[nx,nz] = np.average(potential[nx,:,nz])
 
 	#calculate charge density
 	#------------------------
