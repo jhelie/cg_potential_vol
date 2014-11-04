@@ -304,6 +304,8 @@ def set_charges():
 	global charges_groups
 	charges_groups = {}
 	
+	#solvent
+	#-------
 	charges_groups["Na+"] = {}
 	charges_groups["Na+"]["value"] = 1
 	charges_groups["Na+"]["sele_string"] = "name NA+"
@@ -312,6 +314,16 @@ def set_charges():
 	charges_groups["CL-"]["value"] = -1
 	charges_groups["CL-"]["sele_string"] = "name CL-"
 
+	charges_groups["WP"] = {}
+	charges_groups["WP"]["value"] = 0.46
+	charges_groups["WP"]["sele_string"] = "name WP"
+
+	charges_groups["WM"] = {}
+	charges_groups["WM"]["value"] = -0.46
+	charges_groups["WM"]["sele_string"] = "name WM"
+
+	#lipids
+	#------
 	charges_groups["PO4"] = {}
 	charges_groups["PO4"]["value"] = -1
 	charges_groups["PO4"]["sele_string"] = "name PO4"
@@ -324,13 +336,15 @@ def set_charges():
 	charges_groups["NC3"]["value"] = 1
 	charges_groups["NC3"]["sele_string"] = "name NC3"
 
-	charges_groups["WP"] = {}
-	charges_groups["WP"]["value"] = 0.46
-	charges_groups["WP"]["sele_string"] = "name WP"
+	#transportan
+	#-----------
+	charges_groups["tpos"] = {}
+	charges_groups["tpos"]["value"] = 1
+	charges_groups["tpos"]["sele_string"] = "(resnum 1 and resname GLY and name BB) or (resname LYS and name SC2)"
 
-	charges_groups["WM"] = {}
-	charges_groups["WM"]["value"] = -0.46
-	charges_groups["WM"]["sele_string"] = "name WM"
+	charges_groups["tneg"] = {}
+	charges_groups["tneg"]["value"] = 1
+	charges_groups["tneg"]["sele_string"] = "resnum 27 and resname LEU and name BB"
 
 	return
 def load_MDA_universe():
