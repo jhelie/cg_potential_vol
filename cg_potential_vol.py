@@ -583,7 +583,7 @@ def calculate_stats():
 #=========================================================================================
 
 #xvg files
-def density_write_charges():
+def write_xvg_charges():
 	
 	#open files
 	filename_xvg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charge_1D.xvg'
@@ -618,7 +618,7 @@ def density_write_charges():
 	output_xvg.close()
 		
 	return
-def density_write_potential():
+def write_xvg_potential():
 	
 	#open files
 	filename_xvg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_1D.xvg'
@@ -656,7 +656,7 @@ def density_write_potential():
 	return
 
 #graphs
-def density_graph_charges():
+def graph_charges():
 		
 	#filenames
 	filename_svg = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charges_1D.svg'
@@ -734,7 +734,7 @@ def density_graph_charges():
 	plt.close()
 
 	return
-def density_graph_potential():
+def graph_potential():
 			
 	#1D profile
 	#----------
@@ -829,7 +829,7 @@ def density_graph_potential():
 	return
 
 #Opendx file
-def write_dx():
+def write_dx_potential():
 
 	#open files and read in data
 	filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D'
@@ -856,7 +856,7 @@ def write_dx():
 	#write data
 	output_dx.write(dx_data)
 	output_dx.close()
-	
+	os.remove(filename_dx + '_tmp.dx')
 	return
 
 ##########################################################################################
@@ -900,10 +900,11 @@ calculate_stats()
 # produce outputs
 #=========================================================================================
 print "\n\nWriting outputs..."
-density_write_charges()
-density_write_potential()
-density_graph_charges()
-density_graph_potential()	
+write_xvg_charges()
+write_xvg_potential()
+write_dx_potential()
+graph_charges()
+graph_potential()	
 	
 #=========================================================================================
 # exit
