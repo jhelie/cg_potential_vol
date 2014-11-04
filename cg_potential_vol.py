@@ -97,7 +97,7 @@ Density profile options
 Electrostatic potential
 -----------------------------------------------------
 --er		[15]	: dielectric constant
---rs		[0] 	: distance from charge where the electrostatic starts to be shifted (Angstrom)
+--rs		[0] 	: distance from charge where the electrostatic starts to be shifted (Angstrom) [TO DO]
 --rc		[12]	: distance from charge where the electrostatic should reach 0 (Angstrom)
 
 Other options
@@ -509,7 +509,7 @@ def calculate_stats():
 	#--------------------------------------
 	charge_density = charge_density / float(nb_frames_to_process)
 
- 	#calculate potential
+ 	#calculate potential (in V)
  	#-------------------
 	#calculate distance matrix
 	tmp_dist = np.zeros((2*nb_x,2*nb_y,2*nb_z))
@@ -519,6 +519,11 @@ def calculate_stats():
 				r = np.sqrt(((nxx-nb_x)*delta_x)**2 + ((nyy-nb_y)*delta_y)**2 + ((nzz-nb_z)*delta_z)**2) / float(10)	
 				if r > 0 and r < args.rc:
 					tmp_dist[nxx,nyy,nzz] = pot_conv * f_factor * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
+
+	#open files
+	tmp_filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D_tmp.dx'
+	output_dx = open(tmp_filename_dx, 'w')
+	dx_counter = 0
 
 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
 	for nx in range(0, args.sx):
@@ -538,13 +543,30 @@ def calculate_stats():
 				#add sum of contributions to current voxel
 				potential[nx,ny,nz] += np.sum(tmp_pot)
 
+				#append this to voxel
+				output_dx.write(str(round(potential[nx,ny,nz],4)))
+				if dx_counter == 2:
+					output_dx.write("\n")
+					dx_counter = 0
+				else:
+					output_dx.write(" ")
+					dx_counter += 1
+	
+	#close temporary dx file
+	output_dx.write("attribute \"dep\" string \"positions\"\n")
+	output_dx.write("object \"Electrostatic potential (V)\" class field\n")
+	output_dx.write("component \"positions\" value 1\n")
+	output_dx.write("component \"connections\" value 2\n")
+	output_dx.write("component \"data\" value 3\n")
+	output_dx.close()
 
 	#calculate average potential
 	#---------------------------
 	for nz in range(0, args.sz):
 		potential_1D[nz] = np.average(potential[:,:,nz])
 		for nx in range(0, args.sx):
-			potential_2D[nx,nz] = np.average(potential[nx,:,nz])
+			#potential_2D[nx,nz] = np.average(potential[nx,:,nz])
+			potential_2D[nx,nz] = np.average(potential[nx,20:60,nz])
 
 	#calculate charge density
 	#------------------------
@@ -804,6 +826,37 @@ def density_graph_potential():
 	fig.savefig(filename_svg)
 	plt.close()
 
+	return
+
+#Opendx file
+def write_dx():
+
+	#open files and read in data
+	filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D'
+	with file(filename_dx + '_tmp.dx', 'r') as f:
+		dx_data = f.read()
+	output_dx = open(filename_dx + '.dx', 'w')
+	
+	#general header
+	output_dx.write("#electrostatic potential - written by cg_potential_vol v" + str(version_nb) + "]\n")
+	output_dx.write("# -> nb frames processed: " + str(nb_frames_to_process) + "\n")
+	output_dx.write("# -> epsilon_r: " + str(args.er) + "\n")
+	output_dx.write("# -> r_switch: " + str(args.rs) + "\n")
+	output_dx.write("# -> r_cutoff: " + str(args.rc) + "\n")
+
+	#array info
+	output_dx.write("object 1 class gridpositions counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
+	output_dx.write("origin 0 0 0\n")
+	output_dx.write("delta " + str(delta_x) + " 0 0\n")
+	output_dx.write("delta 0 " + str(delta_y) + " 0\n")
+	output_dx.write("delta 0 0 " + str(delta_z) + "\n")
+	output_dx.write("object 2 class gridconnections counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
+	output_dx.write("object 3 class array type double rank 0 items " + str(int(args.sx*args.sx*args.sz)) + " data follows\n")
+	
+	#write data
+	output_dx.write(dx_data)
+	output_dx.close()
+	
 	return
 
 ##########################################################################################
