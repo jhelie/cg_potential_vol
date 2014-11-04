@@ -847,9 +847,9 @@ def write_dx_potential():
 	#array info
 	output_dx.write("object 1 class gridpositions counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
 	output_dx.write("origin 0 0 0\n")
-	output_dx.write("delta " + str(delta_x) + " 0 0\n")
-	output_dx.write("delta 0 " + str(delta_y) + " 0\n")
-	output_dx.write("delta 0 0 " + str(delta_z) + "\n")
+	output_dx.write("delta " + str(round(delta_x,4)) + " 0 0\n")
+	output_dx.write("delta 0 " + str(round(delta_y,4)) + " 0\n")
+	output_dx.write("delta 0 0 " + str(round(delta_z,4)) + "\n")
 	output_dx.write("object 2 class gridconnections counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
 	output_dx.write("object 3 class array type double rank 0 items " + str(int(args.sx*args.sx*args.sz)) + " data follows\n")
 	
