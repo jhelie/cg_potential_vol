@@ -686,8 +686,8 @@ def graph_charges():
 	ax.yaxis.set_ticks_position('left')
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
-	ax.xaxis.labelpad = 20
-	ax.yaxis.labelpad = 20
+	ax.xaxis.labelpad = 10
+	ax.yaxis.labelpad = 10
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.15, right = 0.85)
@@ -737,8 +737,8 @@ def graph_charges():
 	ax.yaxis.set_ticks_position('left')
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=10))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
-	ax.xaxis.labelpad = 20
-	ax.yaxis.labelpad = 20
+	ax.xaxis.labelpad = 10
+	ax.yaxis.labelpad = 10
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.1, right = 0.8)
@@ -778,8 +778,8 @@ def graph_potential():
 	ax.yaxis.set_ticks_position('left')
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=9))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
-	ax.xaxis.labelpad = 20
-	ax.yaxis.labelpad = 20
+	ax.xaxis.labelpad = 10
+	ax.yaxis.labelpad = 10
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
 	plt.setp(ax.yaxis.get_majorticklabels(), fontsize = "small")
 	plt.subplots_adjust(top = 0.9, bottom = 0.15, left = 0.15, right = 0.85)
@@ -828,8 +828,8 @@ def graph_potential():
 	ax.yaxis.set_ticks_position('left')
 	ax.xaxis.set_major_locator(MaxNLocator(nbins=9))
 	ax.yaxis.set_major_locator(MaxNLocator(nbins=7))
-	ax.xaxis.labelpad = 20
-	ax.yaxis.labelpad = 20
+	ax.xaxis.labelpad = 10
+	ax.yaxis.labelpad = 10
 	ax.tick_params(axis='x', direction='out')
 	ax.tick_params(axis='y', direction='out')
 	plt.setp(ax.xaxis.get_majorticklabels(), fontsize = "small")
