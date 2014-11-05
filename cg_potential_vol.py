@@ -716,8 +716,8 @@ def graph_charges():
 	plt.vlines(lower_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashdot')
-	plt.xlabel('z distance to bilayer center ($\AA$)')
-	plt.ylabel('x axis ($\AA$)')
+	plt.xlabel('x ($\AA$)')
+	plt.ylabel('z distance to bilayer center ($\AA$)')
 	
 	#color bar
 	cax = fig.add_axes([0.85, 0.26, 0.025, 0.48])
@@ -726,7 +726,8 @@ def graph_charges():
 	cbar.set_label(r'charge density ($e.\AA^{-3}$)')
 		
 	#save figure
-	ax.set_xlim(0, args.sz)
+	ax.set_xlim(min(coords_x), max(coords_x))
+	ax.set_ylim(min(coords_z), max(coords_z))
 	ax.spines['top'].set_visible(False)
 	ax.spines['right'].set_visible(False)
 	ax.xaxis.set_ticks_position('bottom')
