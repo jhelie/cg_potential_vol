@@ -89,7 +89,7 @@ Option	      Default  	Description
 -o			: name of output folder
 -b			: beginning time (ns) (the bilayer must exist by then!)
 -e			: ending time (ns)	
--t 		10	: process every t-frames
+-t 		[1]	: process every t-frames
  
 Density profile options
 -----------------------------------------------------
@@ -116,7 +116,7 @@ parser.add_argument('-x', nargs=1, dest='xtcfilename', default=['no'], help=argp
 parser.add_argument('-o', nargs=1, dest='output_folder', default=['no'], help=argparse.SUPPRESS)
 parser.add_argument('-b', nargs=1, dest='t_start', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('-e', nargs=1, dest='t_end', default=[-1], type=int, help=argparse.SUPPRESS)
-parser.add_argument('-t', nargs=1, dest='frames_dt', default=[10], type=int, help=argparse.SUPPRESS)
+parser.add_argument('-t', nargs=1, dest='frames_dt', default=[1], type=int, help=argparse.SUPPRESS)
 
 #density profile options
 parser.add_argument('--charges', nargs=1, dest='chargesfilename', default=['mine'], help=argparse.SUPPRESS)
