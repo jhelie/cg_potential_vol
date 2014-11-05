@@ -27,6 +27,9 @@ DOI:
 This script calculates the electrosatic potential along z in CG systems - i.e. taking
 into account the force shift and cutoff.
 
+The 3D electrostatic potential is saved in an OpenDx file which can then be processed
+by the 'dx_plot' utility to produce the desired 2D or 1D graphs.
+
 A file containing the charged particles can also be supplied to calculate the density
 of charges.
  
