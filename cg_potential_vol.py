@@ -703,7 +703,16 @@ def graph_charges():
 
 	#plot data
 	ax = fig.add_subplot(111)
-	im = plt.imshow(charge_density_2D, cmap = matplotlib.cm.jet_r)
+
+	#rotate data so that the x is horizontal and z vertical after imshow plotting
+	charge_density_2D_oriented = np.zeros((args.sz,args.sx))
+	for nx in range(0, args.sx):
+		for nz in range(0, args.sz):
+			charge_density_2D_oriented[nz,nx] = charge_density_2D[nx,args.sz-1-nz]
+
+	#plot data
+	ax = fig.add_subplot(111)
+	im = plt.imshow(charge_density_2D_oriented, extent = [min(coords_x),max(coords_x),min(coords_z),max(coords_z)], cmap = matplotlib.cm.jet_r)
 	plt.vlines(lower_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(upper_avg, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashed')
 	plt.vlines(0, min(charge_density_2D[:,0]), max(charge_density_2D[:,0]), linestyles = 'dashdot')
