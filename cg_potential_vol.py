@@ -15,12 +15,12 @@ import os.path
 version_nb = "0.0.1"
 parser = argparse.ArgumentParser(prog = 'cg_potential_vol', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
-**********************************************
+***********************************************
 v''' + version_nb + '''
 author: Jean Helie (jean.helie@bioch.ox.ac.uk)
-git: https://github.com/jhelie/cg_potential)vol
+git: https://github.com/jhelie/cg_potential/vol
 DOI: 
-**********************************************
+***********************************************
 
 [ DESCRIPTION ]
  
