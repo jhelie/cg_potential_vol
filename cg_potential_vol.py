@@ -12,75 +12,109 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.1"
+version_nb = "0.0.2"
 parser = argparse.ArgumentParser(prog = 'cg_potential_vol', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
 ***********************************************
 v''' + version_nb + '''
 author: Jean Helie (jean.helie@bioch.ox.ac.uk)
-git: https://github.com/jhelie/cg_potential/vol
+git: https://github.com/jhelie/cg_potential_vol
 DOI: 
 ***********************************************
 
-[ DESCRIPTION ]
+DESCRIPTION
  
-This script calculates the electrosatic potential along z in CG systems - i.e. taking
-into account the force shift and cutoff.
+ This script calculates the electrosatic potential along z in CG systems - i.e. taking
+ into account the force shift and cutoff.
 
-The 3D electrostatic potential is saved in an OpenDx file which can then be processed
-by the 'dx_plot' utility to produce the desired 2D or 1D graphs.
+ The 3D electrostatic potential is saved in an OpenDx file which can then be processed
+ by the 'dx_plot' utility to produce the desired 2D or 1D graphs.
 
-A file containing the charged particles can also be supplied to calculate the density
-of charges.
+ A file containing the charged particles can also be supplied to calculate the density
+ of charges.
  
-The script follows a 2-step process:
- 1. calculate charge density along z for each slice
- 2. sum the corresponding shifted potentials over all the slices
+ The script follows a 2-step process:
+  1. calculate charge density along z for each slice
+  2. sum the corresponding shifted potentials over all the slices
 
-density calculation
--------------------
-  You can specify which particles to take into account for the calculation of the total
-  charge density by supplying a file via the --charges option. Each line of this file
-  should follow the format (without quotation marks):
-   -> 'label,value,MDAnalysis selection string'
+ charges identification
+ ----------------------
+   You can specify which particles to take into account for the calculation of the total
+   charge density by supplying a file via the --charges option. Each line of this file
+   should follow the format (without quotation marks):
+    -> 'label,value,MDAnalysis selection string'
 
-  The absolute charge for each group will be plotted on the charge density profile. The
-  group colour must be specified for each charge.
+   Note that the MDAnalysis selection string should not contain any commas.
+
+   The absolute charge for each group will be plotted on the charge density profile. The
+   group colour must be specified for each charge.
   
-  By default the charged are defined as follows:
-   -> Na+,1,name Na+
-   -> Cl-,-1,name Cl-
-   -> PO4,-1,name PO4
-   -> NC3,1,name NC3
-   -> NH3,1,name NH3
-  (note that the MDAnalysis selection string should not contain any commas)
+   By default charges are defined using the Martini 2.1 settings:
+    -> Na+,1,name NA+
+    -> CL-,-1,name CL-
+    -> PO4,-1,name PO4
+    -> NC3,1,name NC3
+    -> NH3,1,name NH3
+    -> Lys,1,resname LYS and name SC2
+    -> Arg,1,resname ARG and name SC2
+    -> Asp,-1,resname ASP and name SC1
+    -> Glu,-1,resname GLU and name SC1
+  
+   Another default set of charges can be used by specifiying --charges 2.2P :
+    -> Na+,1,name NA+
+    -> CL-,-1,name CL-
+    -> WP,0.46,name WP
+    -> WM,-0.46,name WM
+    -> PO4,-1,name PO4
+    -> NC3,1,name NC3
+    -> NH3,1,name NH3
+    -> Lys,1,resname LYS and name SC2
+    -> Arg,1,resname ARG and name SC2
+    -> Asp,-1,resname ASP and name SC1
+    -> Glu,-1,resname GLU and name SC1
+    -> Asn_p,0.46,resname ASN and name SCP
+    -> Asn_n,-0.46,resname ASN and name SCN
+    -> Gln_p,0.46,resname GLN and name SCP
+    -> Gln_n,-0.46,resname GLN and name SCN
+    -> Thr_p,0.31,resname THR and name SCP
+    -> Thr_n,-0.31,resname THR and name SCN
+    -> Ser_p,0.4,resname SER and name SCP
+    -> Ser_n,-0.4,resname SER and name SCN
+
+   By default proteins termini are considered uncapped and +1 and -1 are added to the
+   first and last backbone beads ("name BB") respectively. If this is not what you want
+   just use the option --capped.
+
+   Note that for systems containing different protein species automatic addition of
+   charges at the termini has not yet been implemented: you should use --capped and
+   provide a file via --charges specifying all charged particles in the system, including
+   termini beads.
+
+ electrostatic potential
+ -----------------------
+   The shifted electrostatic potential is calculated as per Gromacs manual for each point charge.
+   In particular when rs = 0, the potential created by a charge q at a distance r is:
+    -> phi(r) = q/(4*pi*e0*er)*(1/r - 5/(3*rc) + 5*r^3/(3*rc^4) - r^4/rc^5)
 
 
-electrostatic potential
------------------------
-  The shifted electrostatic potential is calculated as per Gromacs manual for each point charge.
-  In particular when rs = 0, the potential created by a charge q at a distance r is:
-   -> phi(r) = q/(4*pi*e0*er)*(1/r - 5/(3*rc) + 5*r^3/(3*rc^4) - r^4/rc^5)
+REQUIREMENTS
+
+ The following python modules are needed :
+  - MDAnalysis
+  - matplotlib
+  - numpy
+  - scipy
+  - networkX (if option --algorithm is set to 'min' or 'cog')
+  - sklearn (if option --algorithm is set to 'density')
 
 
-[ REQUIREMENTS ]
+NOTES
 
-The following python modules are needed :
- - MDAnalysis
- - matplotlib
- - numpy
- - scipy
- - networkX (if option --algorithm is set to 'min' or 'cog')
- - sklearn (if option --algorithm is set to 'density')
-
-
-[ NOTES ]
-
-1. The density is calculated with respect to the z axis, not the bilayer normal. So the
-   more your system deforms the noiser the less meaningful the results get.
+ 1. The density is calculated with respect to the z axis, not the bilayer normal. So the
+    more your system deforms the noiser and the less meaningful the 1D and 2D profiles get.
 
  
-[ USAGE ]
+USAGE
 
 Option	      Default  	Description                    
 -----------------------------------------------------
@@ -89,19 +123,20 @@ Option	      Default  	Description
 -o			: name of output folder
 -b			: beginning time (ns) (the bilayer must exist by then!)
 -e			: ending time (ns)	
--t 		[1]	: process every t-frames
+-t 		1	: process every t-frames
+--charges	2.1	: definition of charged particles, see 'DESCRIPTION' 
+--capped		: assumes protein termini are capped
  
-Density profile options
+Grid options
 -----------------------------------------------------
---charges		: definition of charged particles, see 'DESCRIPTION'  [TO DO]
---sz		[200] 	: number of slizes along z
---sx		[200] 	: number of slizes along x and y
+--sz		200 	: number of slizes along z
+--sx		200 	: number of slizes along x and y
 
 Electrostatic potential
 -----------------------------------------------------
---er		[15]	: dielectric constant
---rs		[0] 	: distance from charge where the electrostatic starts to be shifted (Angstrom) [TO DO]
---rc		[12]	: distance from charge where the electrostatic should reach 0 (Angstrom)
+--er		15	: dielectric constant
+--rs		0 	: distance from charge where the electrostatic starts to be shifted (Angstrom) [TO DO]
+--rc		12	: distance from charge where the electrostatic should reach 0 (Angstrom)
 
 Other options
 -----------------------------------------------------
@@ -117,9 +152,10 @@ parser.add_argument('-o', nargs=1, dest='output_folder', default=['no'], help=ar
 parser.add_argument('-b', nargs=1, dest='t_start', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('-e', nargs=1, dest='t_end', default=[-1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('-t', nargs=1, dest='frames_dt', default=[1], type=int, help=argparse.SUPPRESS)
+parser.add_argument('--charges', nargs=1, dest='chargesfilename', default=['2.1'], help=argparse.SUPPRESS)
+parser.add_argument('--capped', dest='capped', action='store_true', help=argparse.SUPPRESS)
 
-#density profile options
-parser.add_argument('--charges', nargs=1, dest='chargesfilename', default=['mine'], help=argparse.SUPPRESS)
+#grid options
 parser.add_argument('--sx', nargs=1, dest='sx', default=[200], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--sz', nargs=1, dest='sz', default=[200], type=int, help=argparse.SUPPRESS)
 
@@ -217,7 +253,7 @@ except:
 if not os.path.isfile(args.grofilename):
 	print "Error: file " + str(args.grofilename) + " not found."
 	sys.exit(1)
-if args.chargesfilename != "no" and args.chargesfilename != "mine" and not os.path.isfile(args.chargesfilename):
+if args.chargesfilename not in ["no","2.1","2.2P"] and not os.path.isfile(args.chargesfilename):
 	print "Error: file " + str(args.chargesfilename) + " not found."
 	sys.exit(1)
 if args.t_end != -1 and args.t_end < args.t_start:
@@ -262,7 +298,7 @@ else:
 	output_log.close()
 	
 	#copy input files
-	if args.chargesfilename != "no" and args.chargesfilename != "mine":
+	if args.chargesfilename not in ["no","2.1","2.2P"]:
 		shutil.copy2(args.chargesfilename,args.output_folder + "/")
 
 ##########################################################################################
@@ -307,47 +343,128 @@ def set_charges():
 	global charges_groups
 	charges_groups = {}
 	
-	#solvent
-	#-------
-	charges_groups["Na+"] = {}
-	charges_groups["Na+"]["value"] = 1
-	charges_groups["Na+"]["sele_string"] = "name NA+"
-	
-	charges_groups["CL-"] = {}
-	charges_groups["CL-"]["value"] = -1
-	charges_groups["CL-"]["sele_string"] = "name CL-"
+	#use martini 2.1
+	#---------------
+	if args.chargesfilename == "2.1":		
+		#solvent
+		charges_groups["Na+"] = {}
+		charges_groups["Na+"]["value"] = 1
+		charges_groups["Na+"]["sele_string"] = "name NA+"
+		charges_groups["CL-"] = {}
+		charges_groups["CL-"]["value"] = -1
+		charges_groups["CL-"]["sele_string"] = "name CL-"
 
-	charges_groups["WP"] = {}
-	charges_groups["WP"]["value"] = 0.46
-	charges_groups["WP"]["sele_string"] = "name WP"
+		#lipids
+		charges_groups["PO4"] = {}
+		charges_groups["PO4"]["value"] = -1
+		charges_groups["PO4"]["sele_string"] = "name PO4"
+		charges_groups["NH3"] = {}
+		charges_groups["NH3"]["value"] = 1
+		charges_groups["NH3"]["sele_string"] = "name NH3"
+		charges_groups["NC3"] = {}
+		charges_groups["NC3"]["value"] = 1
+		charges_groups["NC3"]["sele_string"] = "name NC3"
 
-	charges_groups["WM"] = {}
-	charges_groups["WM"]["value"] = -0.46
-	charges_groups["WM"]["sele_string"] = "name WM"
+		#protein
+		charges_groups["LYS"] = {}
+		charges_groups["LYS"]["value"] = 1
+		charges_groups["LYS"]["sele_string"] = "resname LYS and name SC2"
+		charges_groups["ARG"] = {}
+		charges_groups["ARG"]["value"] = 1
+		charges_groups["ARG"]["sele_string"] = "resname ARG and name SC2"
+		charges_groups["ASP"] = {}
+		charges_groups["ASP"]["value"] = -1
+		charges_groups["ASP"]["sele_string"] = "resname ASP and name SC1"
+		charges_groups["GLU"] = {}
+		charges_groups["GLU"]["value"] = -1
+		charges_groups["GLU"]["sele_string"] = "resname GLU and name SC1"
+ 
+	#use martini 2.2P
+	#----------------
+	elif args.chargesfilename == "2.2P":
+		#solvent
+		charges_groups["Na+"] = {}
+		charges_groups["Na+"]["value"] = 1
+		charges_groups["Na+"]["sele_string"] = "name NA+"
+		charges_groups["CL-"] = {}
+		charges_groups["CL-"]["value"] = -1
+		charges_groups["CL-"]["sele_string"] = "name CL-"
+		charges_groups["WP"] = {}
+		charges_groups["WP"]["value"] = 0.46
+		charges_groups["WP"]["sele_string"] = "name WP"
+		charges_groups["WM"] = {}
+		charges_groups["WM"]["value"] = -0.46
+		charges_groups["WM"]["sele_string"] = "name WM"
 
-	#lipids
-	#------
-	charges_groups["PO4"] = {}
-	charges_groups["PO4"]["value"] = -1
-	charges_groups["PO4"]["sele_string"] = "name PO4"
+		#lipids
+		charges_groups["PO4"] = {}
+		charges_groups["PO4"]["value"] = -1
+		charges_groups["PO4"]["sele_string"] = "name PO4"
+		charges_groups["NH3"] = {}
+		charges_groups["NH3"]["value"] = 1
+		charges_groups["NH3"]["sele_string"] = "name NH3"
+		charges_groups["NC3"] = {}
+		charges_groups["NC3"]["value"] = 1
+		charges_groups["NC3"]["sele_string"] = "name NC3"
 
-	charges_groups["NH3"] = {}
-	charges_groups["NH3"]["value"] = 1
-	charges_groups["NH3"]["sele_string"] = "name NH3"
+		#protein
+		charges_groups["LYS"] = {}
+		charges_groups["LYS"]["value"] = 1
+		charges_groups["LYS"]["sele_string"] = "resname LYS and name SCP"
+		charges_groups["ARG"] = {}
+		charges_groups["ARG"]["value"] = 1
+		charges_groups["ARG"]["sele_string"] = "resname ARG and name SCP"
+		charges_groups["ASP"] = {}
+		charges_groups["ASP"]["value"] = -1
+		charges_groups["ASP"]["sele_string"] = "resname ASP and name SCN"
+		charges_groups["GLU"] = {}
+		charges_groups["GLU"]["value"] = -1
+		charges_groups["GLU"]["sele_string"] = "resname GLU and name SCN"
+		charges_groups["ASN_p"] = {}
+		charges_groups["ASN_p"]["value"] = 0.46
+		charges_groups["ASN_p"]["sele_string"] = "resname ASN and name SCP"
+		charges_groups["GLN_p"] = {}
+		charges_groups["GLN_p"]["value"] = 0.46
+		charges_groups["GLN_p"]["sele_string"] = "resname GLN and name SCP"
+		charges_groups["THR_p"] = {}
+		charges_groups["THR_p"]["value"] = 0.31
+		charges_groups["THR_p"]["sele_string"] = "resname THR and name SCP"
+		charges_groups["SER_p"] = {}
+		charges_groups["SER_p"]["value"] = 0.4
+		charges_groups["SER_p"]["sele_string"] = "resname SER and name SCP"
+		charges_groups["ASN_n"] = {}
+		charges_groups["ASN_n"]["value"] = 0.46
+		charges_groups["ASN_n"]["sele_string"] = "resname ASN and name SCN"
+		charges_groups["GLN_n"] = {}
+		charges_groups["GLN_n"]["value"] = 0.46
+		charges_groups["GLN_n"]["sele_string"] = "resname GLN and name SCN"
+		charges_groups["THR_n"] = {}
+		charges_groups["THR_n"]["value"] = 0.31
+		charges_groups["THR_n"]["sele_string"] = "resname THR and name SCN"
+		charges_groups["SER_n"] = {}
+		charges_groups["SER_n"]["value"] = 0.4
+		charges_groups["SER_n"]["sele_string"] = "resname SER and name SCN"
 
-	charges_groups["NC3"] = {}
-	charges_groups["NC3"]["value"] = 1
-	charges_groups["NC3"]["sele_string"] = "name NC3"
-
-	#transportan
-	#-----------
-	charges_groups["tpos"] = {}
-	charges_groups["tpos"]["value"] = 1
-	charges_groups["tpos"]["sele_string"] = "(resnum 1 and resname GLY and name BB) or (resname LYS and name SC2)"
-
-	charges_groups["tneg"] = {}
-	charges_groups["tneg"]["value"] = 1
-	charges_groups["tneg"]["sele_string"] = "resnum 27 and resname LEU and name BB"
+	#use user supplied
+	#-----------------
+	else:	
+		with open(args.chargesfilename) as f:
+			lines = f.readlines()
+		for l_index in range(0, len(lines)):
+			line = lines[l_index]
+			if line[-1] == "\n":
+				line = line[:-1]
+			l_content = line.split(',')
+			if len(l_content) != 3:
+				print "Error: wrong format on line " + str(l_index + 1) + " of " + str(args.chargesfilename) + ", see DESCRIPTION in TM_density --help."
+				sys.exit(1)
+			tmp_label = l_content[0]
+			tmp_value = float(l_content[1])
+			tmp_sele = l_content[2]
+			if tmp_label not in charges_groups.keys():
+				charges_groups[tmp_group] = {}
+				charges_groups[tmp_group]["value"] = tmp_value
+				charges_groups[tmp_group]["sele_string"] = tmp_sele
 
 	return
 def load_MDA_universe():
@@ -366,7 +483,9 @@ def load_MDA_universe():
 	global leaflet_sele
 	global upper_sele
 	global lower_sele
+	global charges_groups_pres
 	f_start = 0
+	charges_groups_pres = {}
 		
 	#load universe
 	#-------------
@@ -414,22 +533,41 @@ def load_MDA_universe():
 		frames_to_process = map(lambda f:f_start + args.frames_dt*f, range(0,(f_end - f_start)//args.frames_dt+tmp_offset))
 		nb_frames_to_process = len(frames_to_process)
 
-	#identify leaflets the lazy way (in any case we need to assume to a plane bilayer as we plot against z so no need to be fancy)
+	#identify leaflets the lazy way (we assume a plane bilayer as we plot against z so no need to be fancy for now)
 	#------------------------------
 	leaflet_sele = U.selectAtoms("name PO4")
 	tmp_lipids_avg_z = leaflet_sele.centerOfGeometry()[2]
 	upper_sele = leaflet_sele.selectAtoms("prop z > " + str(tmp_lipids_avg_z))
 	lower_sele = leaflet_sele.selectAtoms("prop z < " + str(tmp_lipids_avg_z))
 
+	#add protein termini charge if present
+	#-------------------------------------
+	print "Identifying charges particles..."
+	if not args.capped:
+		prot = U.selectAtoms("protein")
+		if prot. numberofAtoms() > 0:
+			prot.resnums()
+			charges_groups["Nter"] = {}
+			charges_groups["Nter"]["value"] = 1
+			charges_groups["Nter"]["sele_string"] = "resnum 1 and name BB"
+			charges_groups["Cter"] = {}
+			charges_groups["Cter"]["value"] = -1
+			charges_groups["Cter"]["sele_string"] = "resnum " + str(int(prot.resnums()[-1])) + " and name BB"
+			print " added charge +1 to bead BB on residue 1 of proteins"
+			print " added charge -1 to bead BB on residue " + str(int(proteins_sele[0].numberOfResidues())) + " of proteins"
+	
 	#create charged particles selections
 	#-----------------------------------
 	charge_pres = False
 	for q in charges_groups.keys():
 		charges_groups[q]["sele"] = U.selectAtoms(charges_groups[q]["sele_string"])
-		if charges_groups[q]["sele"].numberOfAtoms() == 0:
-			print " ->warning: charge selection string '" + str(charges_groups[q]["sele_string"]) + "' returned 0 atoms."
+		charges_groups[q]["nb"] = int(charges_groups[q]["sele"].numberOfAtoms())
+		if charges_groups[q]["nb"] == 0:
+			print " warning: charge selection string '" + str(charges_groups[q]["sele_string"]) + "' returned 0 atoms."
 		else:
 			charge_pres = True
+			charges_groups_pres[q] = True
+	
 	if not charge_pres:
 		print "Error: no charged particles found, try using --charges to supply correct charges definition."
 		sys.exit(1)
@@ -468,20 +606,17 @@ def calculate_density(f_index, box_dim):
 
 	#calculate charge density in each bin
 	for q in charges_groups.keys():
-		tmp_q_sele = charges_groups[q]["sele"]
-		qi_nb = tmp_q_sele.numberOfAtoms()
-		qi_val = charges_groups[q]["value"]
-		if qi_nb > 0:
+		if charges_groups_pres[q]:
 			#get coordinates
-			tmp_coord = tmp_q_sele.coordinates()
+			tmp_coord = charges_groups[q]["sele"].coordinates()
 
 			#transform coordinates into index of bins (the fanciness is to handle coords smaller/bigger than 0/U.dim)
 			tmp_coord[:,0] = np.minimum(np.floor(tmp_coord[:,0]/float(delta_x)), np.remainder(np.floor(tmp_coord[:,0]/float(delta_x)),args.sx))
 			tmp_coord[:,1] = np.minimum(np.floor(tmp_coord[:,1]/float(delta_y)), np.remainder(np.floor(tmp_coord[:,1]/float(delta_y)),args.sx))
 			tmp_coord[:,2] = np.minimum(np.floor(tmp_coord[:,2]/float(delta_z)), np.remainder(np.floor(tmp_coord[:,2]/float(delta_z)),args.sz))
 			tmp_coord = tmp_coord.astype(int)
-			for qi in range(0,qi_nb):
-				charge_density[tmp_coord[qi,0],tmp_coord[qi,1],tmp_coord[qi,2]] += qi_val	
+			for qi in range(0,charges_groups[q]["nb"]):
+				charge_density[tmp_coord[qi,0],tmp_coord[qi,1],tmp_coord[qi,2]] += charges_groups[q]["value"]
 	return
 def calculate_stats():
 	global coords_x
