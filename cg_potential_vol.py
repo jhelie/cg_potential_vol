@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.2"
+version_nb = "0.0.3"
 parser = argparse.ArgumentParser(prog = 'cg_potential_vol', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
 ***********************************************
@@ -55,10 +55,10 @@ DESCRIPTION
     -> PO4,-1,name PO4
     -> NC3,1,name NC3
     -> NH3,1,name NH3
-    -> Lys,1,resname LYS and name SC2
-    -> Arg,1,resname ARG and name SC2
-    -> Asp,-1,resname ASP and name SC1
-    -> Glu,-1,resname GLU and name SC1
+    -> Lys,1,resname LYS and name SC2 (position: 3/3)
+    -> Arg,1,resname ARG and name SC2 (position: 3/3)
+    -> Asp,-1,resname ASP and name SC1 (position: 2/2)
+    -> Glu,-1,resname GLU and name SC1 (position: 2/2)
   
    Another default set of charges can be used by specifiying --charges 2.2P :
     -> Na+,1,name NA+
@@ -126,6 +126,7 @@ Option	      Default  	Description
 -t 		1	: process every t-frames
 --charges	2.1	: definition of charged particles, see 'DESCRIPTION' 
 --capped		: assumes protein termini are capped
+--positions		: use bead positions in residues instead of bead names to select charged protein beads
  
 Grid options
 -----------------------------------------------------
@@ -154,6 +155,7 @@ parser.add_argument('-e', nargs=1, dest='t_end', default=[-1], type=int, help=ar
 parser.add_argument('-t', nargs=1, dest='frames_dt', default=[1], type=int, help=argparse.SUPPRESS)
 parser.add_argument('--charges', nargs=1, dest='chargesfilename', default=['2.1'], help=argparse.SUPPRESS)
 parser.add_argument('--capped', dest='capped', action='store_true', help=argparse.SUPPRESS)
+parser.add_argument('--positions', dest='positions', action='store_true', help=argparse.SUPPRESS)
 
 #grid options
 parser.add_argument('--sx', nargs=1, dest='sx', default=[200], type=int, help=argparse.SUPPRESS)
@@ -341,6 +343,7 @@ charge_density_2D = np.zeros((args.sx,args.sz))
 def set_charges():
 			
 	global charges_groups
+	global charged_residues
 	charges_groups = {}
 	
 	#use martini 2.1
@@ -364,20 +367,41 @@ def set_charges():
 		charges_groups["NC3"] = {}
 		charges_groups["NC3"]["value"] = 1
 		charges_groups["NC3"]["sele_string"] = "name NC3"
-
-		#protein
-		charges_groups["LYS"] = {}
-		charges_groups["LYS"]["value"] = 1
-		charges_groups["LYS"]["sele_string"] = "resname LYS and name SC2"
-		charges_groups["ARG"] = {}
-		charges_groups["ARG"]["value"] = 1
-		charges_groups["ARG"]["sele_string"] = "resname ARG and name SC2"
-		charges_groups["ASP"] = {}
-		charges_groups["ASP"]["value"] = -1
-		charges_groups["ASP"]["sele_string"] = "resname ASP and name SC1"
-		charges_groups["GLU"] = {}
-		charges_groups["GLU"]["value"] = -1
-		charges_groups["GLU"]["sele_string"] = "resname GLU and name SC1"
+	
+		#protein: use bead names
+		charged_residues = ["LYS","ARG","ASP","GLU"]
+		if not args.positions:
+			charges_groups["LYS"] = {}
+			charges_groups["LYS"]["value"] = 1
+			charges_groups["LYS"]["sele_string"] = "resname LYS and name SC2"
+			charges_groups["ARG"] = {}
+			charges_groups["ARG"]["value"] = 1
+			charges_groups["ARG"]["sele_string"] = "resname ARG and name SC2"
+			charges_groups["ASP"] = {}
+			charges_groups["ASP"]["value"] = -1
+			charges_groups["ASP"]["sele_string"] = "resname ASP and name SC1"
+			charges_groups["GLU"] = {}
+			charges_groups["GLU"]["value"] = -1
+			charges_groups["GLU"]["sele_string"] = "resname GLU and name SC1"
+		#protein: use bead position
+		else:
+			charges_groups["LYS"] = {}
+			charges_groups["LYS"]["value"] = 1
+			charges_groups["LYS"]["sele_string"] = "resname LYS"
+			charges_groups["LYS"]["position"] = 2
+			charges_groups["ARG"] = {}
+			charges_groups["ARG"]["value"] = 1
+			charges_groups["ARG"]["sele_string"] = "resname ARG"
+			charges_groups["ARG"]["position"] = 2
+			charges_groups["ASP"] = {}
+			charges_groups["ASP"]["value"] = -1
+			charges_groups["ASP"]["sele_string"] = "resname ASP"
+			charges_groups["ASP"]["position"] = 1
+			charges_groups["GLU"] = {}
+			charges_groups["GLU"]["value"] = -1
+			charges_groups["GLU"]["sele_string"] = "resname GLU"
+			charges_groups["GLU"]["position"] = 1
+			
  
 	#use martini 2.2P
 	#----------------
@@ -545,25 +569,38 @@ def load_MDA_universe():
 	print "Identifying charges particles..."
 	if not args.capped:
 		prot = U.selectAtoms("protein")
-		if prot. numberofAtoms() > 0:
+		if prot.numberOfAtoms() > 0:
 			prot.resnums()
 			charges_groups["Nter"] = {}
-			charges_groups["Nter"]["value"] = 1
-			charges_groups["Nter"]["sele_string"] = "resnum 1 and name BB"
 			charges_groups["Cter"] = {}
+			charges_groups["Nter"]["value"] = 1
 			charges_groups["Cter"]["value"] = -1
-			charges_groups["Cter"]["sele_string"] = "resnum " + str(int(prot.resnums()[-1])) + " and name BB"
-			print " added charge +1 to bead BB on residue 1 of proteins"
-			print " added charge -1 to bead BB on residue " + str(int(proteins_sele[0].numberOfResidues())) + " of proteins"
+			charged_residues.append("Nter")
+			charged_residues.append("Cter")
+			if not args.positions:
+				charges_groups["Nter"]["sele_string"] = "resnum 1 and name BB"
+				charges_groups["Cter"]["sele_string"] = "resnum " + str(int(prot.resnums()[-1])) + " and name BB"
+			else:
+				charges_groups["Nter"]["sele_string"] = "resnum 1"
+				charges_groups["Nter"]["position"] = 0
+				charges_groups["Cter"]["sele_string"] = "resnum " + str(int(prot.resnums()[-1]))
+				charges_groups["Cter"]["position"] = 0
+			print " added charge +1 to backbone bead on residue 1 of proteins"
+			print " added charge -1 to backbone bead on residue " + str(int(prot.numberOfResidues())) + " of proteins"
+			charges_groups_pres["Nter"] = True
+			charges_groups_pres["Cter"] = True
 	
 	#create charged particles selections
 	#-----------------------------------
 	charge_pres = False
 	for q in charges_groups.keys():
 		charges_groups[q]["sele"] = U.selectAtoms(charges_groups[q]["sele_string"])
+		if args.positions and q in charged_residues:
+			charges_groups[q]["sele"] = charges_groups[q]["sele"].atoms[int(charges_groups[q]["position"]):int(charges_groups[q]["sele"].numberOfAtoms()):int(charges_groups[q]["sele"].residues[0].numberOfAtoms())]
 		charges_groups[q]["nb"] = int(charges_groups[q]["sele"].numberOfAtoms())
 		if charges_groups[q]["nb"] == 0:
 			print " warning: charge selection string '" + str(charges_groups[q]["sele_string"]) + "' returned 0 atoms."
+			charges_groups_pres[q] = False
 		else:
 			charge_pres = True
 			charges_groups_pres[q] = True
