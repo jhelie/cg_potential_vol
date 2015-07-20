@@ -255,8 +255,11 @@ except:
 if not os.path.isfile(args.grofilename):
 	print "Error: file " + str(args.grofilename) + " not found."
 	sys.exit(1)
-if args.chargesfilename not in ["no","2.1","2.2P"] and not os.path.isfile(args.chargesfilename):
+if args.chargesfilename not in ["2.1","2.2P"] and not os.path.isfile(args.chargesfilename):
 	print "Error: file " + str(args.chargesfilename) + " not found."
+	sys.exit(1)
+if args.chargesfilename not in ["2.1","2.2P"] and args.positions:
+	print "Error: --position cannot be used with user specified --charges"
 	sys.exit(1)
 if args.t_end != -1 and args.t_end < args.t_start:
 	print "Error: the starting time (" + str(args.t_start) + "ns) for analysis is later than the ending time (" + str(args.t_end) + "ns)."
@@ -432,42 +435,96 @@ def set_charges():
 		charges_groups["NC3"]["sele_string"] = "name NC3"
 
 		#protein
-		charges_groups["LYS"] = {}
-		charges_groups["LYS"]["value"] = 1
-		charges_groups["LYS"]["sele_string"] = "resname LYS and name SCP"
-		charges_groups["ARG"] = {}
-		charges_groups["ARG"]["value"] = 1
-		charges_groups["ARG"]["sele_string"] = "resname ARG and name SCP"
-		charges_groups["ASP"] = {}
-		charges_groups["ASP"]["value"] = -1
-		charges_groups["ASP"]["sele_string"] = "resname ASP and name SCN"
-		charges_groups["GLU"] = {}
-		charges_groups["GLU"]["value"] = -1
-		charges_groups["GLU"]["sele_string"] = "resname GLU and name SCN"
-		charges_groups["ASN_p"] = {}
-		charges_groups["ASN_p"]["value"] = 0.46
-		charges_groups["ASN_p"]["sele_string"] = "resname ASN and name SCP"
-		charges_groups["GLN_p"] = {}
-		charges_groups["GLN_p"]["value"] = 0.46
-		charges_groups["GLN_p"]["sele_string"] = "resname GLN and name SCP"
-		charges_groups["THR_p"] = {}
-		charges_groups["THR_p"]["value"] = 0.31
-		charges_groups["THR_p"]["sele_string"] = "resname THR and name SCP"
-		charges_groups["SER_p"] = {}
-		charges_groups["SER_p"]["value"] = 0.4
-		charges_groups["SER_p"]["sele_string"] = "resname SER and name SCP"
-		charges_groups["ASN_n"] = {}
-		charges_groups["ASN_n"]["value"] = 0.46
-		charges_groups["ASN_n"]["sele_string"] = "resname ASN and name SCN"
-		charges_groups["GLN_n"] = {}
-		charges_groups["GLN_n"]["value"] = 0.46
-		charges_groups["GLN_n"]["sele_string"] = "resname GLN and name SCN"
-		charges_groups["THR_n"] = {}
-		charges_groups["THR_n"]["value"] = 0.31
-		charges_groups["THR_n"]["sele_string"] = "resname THR and name SCN"
-		charges_groups["SER_n"] = {}
-		charges_groups["SER_n"]["value"] = 0.4
-		charges_groups["SER_n"]["sele_string"] = "resname SER and name SCN"
+		charged_residues = ["LYS","ARG","ASP","GLU","ASN_p","GLN_p","THR_p","SER_p","ASN_n","GLN_n","THR_n","SER_n"]
+		if not args.positions:
+			charges_groups["LYS"] = {}
+			charges_groups["LYS"]["value"] = 1
+			charges_groups["LYS"]["sele_string"] = "resname LYS and name SCP"
+			charges_groups["ARG"] = {}
+			charges_groups["ARG"]["value"] = 1
+			charges_groups["ARG"]["sele_string"] = "resname ARG and name SCP"
+			charges_groups["ASP"] = {}
+			charges_groups["ASP"]["value"] = -1
+			charges_groups["ASP"]["sele_string"] = "resname ASP and name SCN"
+			charges_groups["GLU"] = {}
+			charges_groups["GLU"]["value"] = -1
+			charges_groups["GLU"]["sele_string"] = "resname GLU and name SCN"
+			charges_groups["ASN_p"] = {}
+			charges_groups["ASN_p"]["value"] = 0.46
+			charges_groups["ASN_p"]["sele_string"] = "resname ASN and name SCP"
+			charges_groups["GLN_p"] = {}
+			charges_groups["GLN_p"]["value"] = 0.46
+			charges_groups["GLN_p"]["sele_string"] = "resname GLN and name SCP"
+			charges_groups["THR_p"] = {}
+			charges_groups["THR_p"]["value"] = 0.31
+			charges_groups["THR_p"]["sele_string"] = "resname THR and name SCP"
+			charges_groups["SER_p"] = {}
+			charges_groups["SER_p"]["value"] = 0.4
+			charges_groups["SER_p"]["sele_string"] = "resname SER and name SCP"
+			charges_groups["ASN_n"] = {}
+			charges_groups["ASN_n"]["value"] = -0.46
+			charges_groups["ASN_n"]["sele_string"] = "resname ASN and name SCN"
+			charges_groups["GLN_n"] = {}
+			charges_groups["GLN_n"]["value"] = -0.46
+			charges_groups["GLN_n"]["sele_string"] = "resname GLN and name SCN"
+			charges_groups["THR_n"] = {}
+			charges_groups["THR_n"]["value"] = -0.31
+			charges_groups["THR_n"]["sele_string"] = "resname THR and name SCN"
+			charges_groups["SER_n"] = {}
+			charges_groups["SER_n"]["value"] = -0.4
+			charges_groups["SER_n"]["sele_string"] = "resname SER and name SCN"
+		else:
+			charges_groups["LYS"] = {}
+			charges_groups["LYS"]["value"] = 1
+			charges_groups["LYS"]["sele_string"] = "resname LYS"
+			charges_groups["LYS"]["position"] = 3
+			charges_groups["ARG"] = {}
+			charges_groups["ARG"]["value"] = 1
+			charges_groups["ARG"]["sele_string"] = "resname ARG"
+			charges_groups["ARG"]["position"] = 3
+			charges_groups["ASP"] = {}
+			charges_groups["ASP"]["value"] = -1
+			charges_groups["ASP"]["sele_string"] = "resname ASP"
+			charges_groups["ASP"]["position"] = 2
+			charges_groups["GLU"] = {}
+			charges_groups["GLU"]["value"] = -1
+			charges_groups["GLU"]["sele_string"] = "resname GLU"
+			charges_groups["GLU"]["position"] = 2
+			
+			charges_groups["ASN_p"] = {}
+			charges_groups["ASN_p"]["value"] = 0.46
+			charges_groups["ASN_p"]["sele_string"] = "resname ASN"
+			charges_groups["ASN_p"]["position"] = 2
+			charges_groups["GLN_p"] = {}
+			charges_groups["GLN_p"]["value"] = 0.46
+			charges_groups["GLN_p"]["sele_string"] = "resname GLN"
+			charges_groups["GLN_p"]["position"] = 2
+			charges_groups["THR_p"] = {}
+			charges_groups["THR_p"]["value"] = 0.31
+			charges_groups["THR_p"]["sele_string"] = "resname THR"
+			charges_groups["THR_p"]["position"] = 2
+			charges_groups["SER_p"] = {}
+			charges_groups["SER_p"]["value"] = 0.4
+			charges_groups["SER_p"]["sele_string"] = "resname SER"
+			charges_groups["SER_p"]["position"] = 2
+			
+			charges_groups["ASN_n"] = {}
+			charges_groups["ASN_n"]["value"] = -0.46
+			charges_groups["ASN_n"]["sele_string"] = "resname ASN"
+			charges_groups["ASN_n"]["position"] = 3
+			charges_groups["GLN_n"] = {}
+			charges_groups["GLN_n"]["value"] = -0.46
+			charges_groups["GLN_n"]["sele_string"] = "resname GLN"
+			charges_groups["GLN_n"]["position"] = 3
+			charges_groups["THR_n"] = {}
+			charges_groups["THR_n"]["value"] = -0.31
+			charges_groups["THR_n"]["sele_string"] = "resname THR"
+			charges_groups["THR_n"]["position"] = 3
+			charges_groups["SER_n"] = {}
+			charges_groups["SER_n"]["value"] = -0.4
+			charges_groups["SER_n"]["sele_string"] = "resname SER"
+			charges_groups["SER_n"]["position"] = 3
+			
 
 	#use user supplied
 	#-----------------
