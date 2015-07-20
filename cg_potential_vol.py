@@ -68,18 +68,18 @@ DESCRIPTION
     -> PO4,-1,name PO4
     -> NC3,1,name NC3
     -> NH3,1,name NH3
-    -> Lys,1,resname LYS and name SC2
-    -> Arg,1,resname ARG and name SC2
-    -> Asp,-1,resname ASP and name SC1
-    -> Glu,-1,resname GLU and name SC1
-    -> Asn_p,0.46,resname ASN and name SCP
-    -> Asn_n,-0.46,resname ASN and name SCN
-    -> Gln_p,0.46,resname GLN and name SCP
-    -> Gln_n,-0.46,resname GLN and name SCN
-    -> Thr_p,0.31,resname THR and name SCP
-    -> Thr_n,-0.31,resname THR and name SCN
-    -> Ser_p,0.4,resname SER and name SCP
-    -> Ser_n,-0.4,resname SER and name SCN
+    -> Lys,1,resname LYS and name SC2 (position: 4/4)
+    -> Arg,1,resname ARG and name SC2 (position: 4/4)
+    -> Asp,-1,resname ASP and name SC1 (position: 3/3)
+    -> Glu,-1,resname GLU and name SC1 (position: 3/3)
+    -> Asn_p,0.46,resname ASN and name SCP (position: 3/4)
+    -> Asn_n,-0.46,resname ASN and name SCN (position: 4/4)
+    -> Gln_p,0.46,resname GLN and name SCP (position: 3/4)
+    -> Gln_n,-0.46,resname GLN and name SCN (position: 4/4)
+    -> Thr_p,0.31,resname THR and name SCP (position: 3/4)
+    -> Thr_n,-0.31,resname THR and name SCN (position: 4/4)
+    -> Ser_p,0.4,resname SER and name SCP (position: 3/4)
+    -> Ser_n,-0.4,resname SER and name SCN (position: 4/4)
 
    By default proteins termini are considered uncapped and +1 and -1 are added to the
    first and last backbone beads ("name BB") respectively. If this is not what you want
