@@ -12,7 +12,7 @@ import os.path
 #=========================================================================================
 # create parser
 #=========================================================================================
-version_nb = "0.0.3"
+version_nb = "0.0.4"
 parser = argparse.ArgumentParser(prog = 'cg_potential_vol', usage='', add_help = False, formatter_class = argparse.RawDescriptionHelpFormatter, description =\
 '''
 ***********************************************
@@ -127,6 +127,7 @@ Option	      Default  	Description
 --charges	2.1	: definition of charged particles, see 'DESCRIPTION' 
 --capped		: assumes protein termini are capped
 --positions		: use bead positions in residues instead of bead names to select charged protein beads
+--protein		: only take into account charges due to protein(s)
  
 Grid options
 -----------------------------------------------------
@@ -141,6 +142,7 @@ Electrostatic potential
 
 Other options
 -----------------------------------------------------
+--debug		: for development
 --version		: show version number and exit
 -h, --help		: show this menu and exit
  
@@ -156,6 +158,7 @@ parser.add_argument('-t', nargs=1, dest='frames_dt', default=[1], type=int, help
 parser.add_argument('--charges', nargs=1, dest='chargesfilename', default=['2.1'], help=argparse.SUPPRESS)
 parser.add_argument('--capped', dest='capped', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--positions', dest='positions', action='store_true', help=argparse.SUPPRESS)
+parser.add_argument('--protein', dest='protein', action='store_true', help=argparse.SUPPRESS)
 
 #grid options
 parser.add_argument('--sx', nargs=1, dest='sx', default=[200], type=int, help=argparse.SUPPRESS)
@@ -172,6 +175,7 @@ parser.add_argument('--flipflops', nargs=1, dest='selection_file_ff', default=['
 parser.add_argument('--leaflets', nargs=1, dest='cutoff_leaflet', default=['optimise'], help=argparse.SUPPRESS)
 
 #other options
+parser.add_argument('--debug', dest='debug', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--version', action='version', version='%(prog)s v' + version_nb, help=argparse.SUPPRESS)
 parser.add_argument('-h','--help', action='help', help=argparse.SUPPRESS)
 
@@ -292,7 +296,7 @@ if os.path.isdir(args.output_folder):
 	sys.exit(1)
 else:
 	os.mkdir(args.output_folder)
-	filename_log = os.getcwd() + '/' + str(args.output_folder) + '/cg_potential.log'
+	filename_log = os.getcwd() + '/' + str(args.output_folder) + '/cg_potential_vol.log'
 	output_log = open(filename_log, 'w')		
 	output_log.write("[cg_potential_vol v" + str(version_nb) + "]\n")
 	output_log.write("\nThis folder and its content were created using the following command:\n\n")
@@ -352,24 +356,25 @@ def set_charges():
 	#use martini 2.1
 	#---------------
 	if args.chargesfilename == "2.1":		
-		#solvent
-		charges_groups["Na+"] = {}
-		charges_groups["Na+"]["value"] = 1
-		charges_groups["Na+"]["sele_string"] = "name NA+"
-		charges_groups["CL-"] = {}
-		charges_groups["CL-"]["value"] = -1
-		charges_groups["CL-"]["sele_string"] = "name CL-"
-
-		#lipids
-		charges_groups["PO4"] = {}
-		charges_groups["PO4"]["value"] = -1
-		charges_groups["PO4"]["sele_string"] = "name PO4"
-		charges_groups["NH3"] = {}
-		charges_groups["NH3"]["value"] = 1
-		charges_groups["NH3"]["sele_string"] = "name NH3"
-		charges_groups["NC3"] = {}
-		charges_groups["NC3"]["value"] = 1
-		charges_groups["NC3"]["sele_string"] = "name NC3"
+		if not args.protein:
+			#solvent
+			charges_groups["Na+"] = {}
+			charges_groups["Na+"]["value"] = 1
+			charges_groups["Na+"]["sele_string"] = "name NA+"
+			charges_groups["CL-"] = {}
+			charges_groups["CL-"]["value"] = -1
+			charges_groups["CL-"]["sele_string"] = "name CL-"
+	
+			#lipids
+			charges_groups["PO4"] = {}
+			charges_groups["PO4"]["value"] = -1
+			charges_groups["PO4"]["sele_string"] = "name PO4"
+			charges_groups["NH3"] = {}
+			charges_groups["NH3"]["value"] = 1
+			charges_groups["NH3"]["sele_string"] = "name NH3"
+			charges_groups["NC3"] = {}
+			charges_groups["NC3"]["value"] = 1
+			charges_groups["NC3"]["sele_string"] = "name NC3"
 	
 		#protein: use bead names
 		charged_residues = ["LYS","ARG","ASP","GLU"]
@@ -409,30 +414,31 @@ def set_charges():
 	#use martini 2.2P
 	#----------------
 	elif args.chargesfilename == "2.2P":
-		#solvent
-		charges_groups["Na+"] = {}
-		charges_groups["Na+"]["value"] = 1
-		charges_groups["Na+"]["sele_string"] = "name NA+"
-		charges_groups["CL-"] = {}
-		charges_groups["CL-"]["value"] = -1
-		charges_groups["CL-"]["sele_string"] = "name CL-"
-		charges_groups["WP"] = {}
-		charges_groups["WP"]["value"] = 0.46
-		charges_groups["WP"]["sele_string"] = "name WP"
-		charges_groups["WM"] = {}
-		charges_groups["WM"]["value"] = -0.46
-		charges_groups["WM"]["sele_string"] = "name WM"
-
-		#lipids
-		charges_groups["PO4"] = {}
-		charges_groups["PO4"]["value"] = -1
-		charges_groups["PO4"]["sele_string"] = "name PO4"
-		charges_groups["NH3"] = {}
-		charges_groups["NH3"]["value"] = 1
-		charges_groups["NH3"]["sele_string"] = "name NH3"
-		charges_groups["NC3"] = {}
-		charges_groups["NC3"]["value"] = 1
-		charges_groups["NC3"]["sele_string"] = "name NC3"
+		if not args.protein:
+			#solvent
+			charges_groups["Na+"] = {}
+			charges_groups["Na+"]["value"] = 1
+			charges_groups["Na+"]["sele_string"] = "name NA+"
+			charges_groups["CL-"] = {}
+			charges_groups["CL-"]["value"] = -1
+			charges_groups["CL-"]["sele_string"] = "name CL-"
+			charges_groups["WP"] = {}
+			charges_groups["WP"]["value"] = 0.46
+			charges_groups["WP"]["sele_string"] = "name WP"
+			charges_groups["WM"] = {}
+			charges_groups["WM"]["value"] = -0.46
+			charges_groups["WM"]["sele_string"] = "name WM"
+	
+			#lipids
+			charges_groups["PO4"] = {}
+			charges_groups["PO4"]["value"] = -1
+			charges_groups["PO4"]["sele_string"] = "name PO4"
+			charges_groups["NH3"] = {}
+			charges_groups["NH3"]["value"] = 1
+			charges_groups["NH3"]["sele_string"] = "name NH3"
+			charges_groups["NC3"] = {}
+			charges_groups["NC3"]["value"] = 1
+			charges_groups["NC3"]["sele_string"] = "name NC3"
 
 		#protein
 		charged_residues = ["LYS","ARG","ASP","GLU","ASN_p","GLN_p","THR_p","SER_p","ASN_n","GLN_n","THR_n","SER_n"]
@@ -624,7 +630,7 @@ def load_MDA_universe():
 	#add protein termini charge if present
 	#-------------------------------------
 	print "Identifying charges particles..."
-	if not args.capped:
+	if not args.capped and not args.debug:
 		prot = U.selectAtoms("protein")
 		if prot.numberOfAtoms() > 0:
 			prot.resnums()
@@ -646,14 +652,24 @@ def load_MDA_universe():
 			print " added charge -1 to backbone bead on residue " + str(int(prot.numberOfResidues())) + " of proteins"
 			charges_groups_pres["Nter"] = True
 			charges_groups_pres["Cter"] = True
+		elif args.protein:
+			print "Error: --protein specified but no proteins found."
+			sys.exit(1)
 	
 	#create charged particles selections
 	#-----------------------------------
 	charge_pres = False
+		
 	for q in charges_groups.keys():
 		charges_groups[q]["sele"] = U.selectAtoms(charges_groups[q]["sele_string"])
 		if args.positions and q in charged_residues:
 			charges_groups[q]["sele"] = charges_groups[q]["sele"].atoms[int(charges_groups[q]["position"]):int(charges_groups[q]["sele"].numberOfAtoms()):int(charges_groups[q]["sele"].residues[0].numberOfAtoms())]
+		
+		#debug mode
+		if args.debug:
+			print "atom names for charge group: ", q
+			print charges_groups[q]["sele"].names()
+		
 		charges_groups[q]["nb"] = int(charges_groups[q]["sele"].numberOfAtoms())
 		if charges_groups[q]["nb"] == 0:
 			print " warning: charge selection string '" + str(charges_groups[q]["sele_string"]) + "' returned 0 atoms."
@@ -661,6 +677,19 @@ def load_MDA_universe():
 		else:
 			charge_pres = True
 			charges_groups_pres[q] = True
+
+	#debug mode
+	if args.debug:
+		charges_groups["BCQa"] = {}
+		charges_groups["BCQa"]["sele"] = U.selectAtoms("name BCQa or name BHQa or name BSQa")
+		charges_groups["BCQa"]["value"] = -1
+		charges_groups_pres["BCQa"] = True
+		charges_groups["BCQa"]["nb"] = int(charges_groups["BCQa"]["sele"].numberOfAtoms())
+		charges_groups["BCQd"] = {}
+		charges_groups["BCQd"]["sele"] = U.selectAtoms("name BCQd or name BHQd or name BSQd")
+		charges_groups["BCQd"]["value"] = 1
+		charges_groups_pres["BCQd"] = True
+		charges_groups["BCQd"]["nb"] = int(charges_groups["BCQd"]["sele"].numberOfAtoms())
 	
 	if not charge_pres:
 		print "Error: no charged particles found, try using --charges to supply correct charges definition."
@@ -699,8 +728,15 @@ def calculate_density(f_index, box_dim):
 	lower[f_index] = lower_sele.centerOfGeometry()[2]
 
 	#calculate charge density in each bin
+	#debug mode
+	if args.debug:
+		print "\ncharge groups used for stats:"
 	for q in charges_groups.keys():
 		if charges_groups_pres[q]:
+			#debug mode
+			if args.debug:
+				print q
+			
 			#get coordinates
 			tmp_coord = charges_groups[q]["sele"].coordinates()
 
@@ -753,10 +789,16 @@ def calculate_stats():
 					tmp_dist[nxx,nyy,nzz] = pot_conv * f_factor * (1/float(r) - 5/float(3*args.rc) + 5 * r**3 / float(3 * args.rc**4) - r**4 / float(args.rc**5))
 
 	#open files
-	tmp_filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D_tmp.dx'
+	if args.xtcfilename == "no":
+		tmp_filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.grofilename[:-4]) + '_potential_3D_tmp.dx'
+		tmp_filename_dx_charge = os.getcwd() + '/' + args.output_folder + '/' + str(args.grofilename[:-4]) + '_charge_3D_tmp.dx'
+	else:
+		tmp_filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D_tmp.dx'
+		tmp_filename_dx_charge = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charge_3D_tmp.dx'
 	output_dx = open(tmp_filename_dx, 'w')
+	output_dx_charge = open(tmp_filename_dx_charge, 'w')
+	
 	dx_counter = 0
-
 	#browse each occupied voxel and add its potential contribution to its neighbours within rc
 	for nx in range(0, args.sx):
 		for ny in range(0, args.sx):
@@ -777,20 +819,30 @@ def calculate_stats():
 
 				#append this to voxel
 				output_dx.write(str(round(potential[nx,ny,nz],4)))
+				output_dx_charge.write(str(round(charge_density[nx,ny,nz],4)))
+				
 				if dx_counter == 2:
 					output_dx.write("\n")
+					output_dx_charge.write("\n")
 					dx_counter = 0
 				else:
 					output_dx.write(" ")
+					output_dx_charge.write("\n")
 					dx_counter += 1
 	
-	#close temporary dx file
+	#close temporary dx files
 	output_dx.write("attribute \"dep\" string \"positions\"\n")
 	output_dx.write("object \"Electrostatic potential (V)\" class field\n")
 	output_dx.write("component \"positions\" value 1\n")
 	output_dx.write("component \"connections\" value 2\n")
 	output_dx.write("component \"data\" value 3\n")
 	output_dx.close()
+	output_dx_charge.write("attribute \"dep\" string \"positions\"\n")
+	output_dx_charge.write("object \"Charge density (e.A-3)\" class field\n")
+	output_dx_charge.write("component \"positions\" value 1\n")
+	output_dx_charge.write("component \"connections\" value 2\n")
+	output_dx_charge.write("component \"data\" value 3\n")
+	output_dx_charge.close()
 
 	#calculate average potential
 	#---------------------------
@@ -1073,7 +1125,10 @@ def graph_potential():
 def write_dx_potential():
 
 	#open files and read in data
-	filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D'
+	if args.xtcfilename == "no":
+		filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.grofilename[:-4]) + '_potential_3D'
+	else:
+		filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_potential_3D'
 	with file(filename_dx + '_tmp.dx', 'r') as f:
 		dx_data = f.read()
 	output_dx = open(filename_dx + '.dx', 'w')
@@ -1098,6 +1153,40 @@ def write_dx_potential():
 	output_dx.write(dx_data)
 	output_dx.close()
 	os.remove(filename_dx + '_tmp.dx')
+	
+	return
+
+def write_dx_charge():
+	#open files and read in data
+	if args.xtcfilename == "no":
+		filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.grofilename[:-4]) + '_charge_3D'
+	else:
+		filename_dx = os.getcwd() + '/' + args.output_folder + '/' + str(args.xtcfilename[:-4]) + '_charge_3D'
+	with file(filename_dx + '_tmp.dx', 'r') as f:
+		dx_data = f.read()
+	output_dx = open(filename_dx + '.dx', 'w')
+	
+	#general header
+	output_dx.write("#electrostatic potential - written by cg_potential_vol v" + str(version_nb) + "]\n")
+	output_dx.write("# -> nb frames processed: " + str(nb_frames_to_process) + "\n")
+	output_dx.write("# -> epsilon_r: " + str(args.er) + "\n")
+	output_dx.write("# -> r_switch: " + str(args.rs) + "\n")
+	output_dx.write("# -> r_cutoff: " + str(args.rc) + "\n")
+
+	#array info
+	output_dx.write("object 1 class gridpositions counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
+	output_dx.write("origin 0 0 0\n")
+	output_dx.write("delta " + str(round(delta_x,4)) + " 0 0\n")
+	output_dx.write("delta 0 " + str(round(delta_y,4)) + " 0\n")
+	output_dx.write("delta 0 0 " + str(round(delta_z,4)) + "\n")
+	output_dx.write("object 2 class gridconnections counts " + str(args.sx) + " " + str(args.sx) + " " + str(args.sz) + "\n")
+	output_dx.write("object 3 class array type double rank 0 items " + str(int(args.sx*args.sx*args.sz)) + " data follows\n")
+	
+	#write data
+	output_dx.write(dx_data)
+	output_dx.close()
+	os.remove(filename_dx + '_tmp.dx')
+
 	return
 
 ##########################################################################################
@@ -1119,7 +1208,7 @@ print "\nCalculating charge density..."
 #case: structure only
 #--------------------
 if args.xtcfilename=="no":
-	calculate_potential(0,U.trajectory.ts.dimensions)
+	calculate_density(0,U.trajectory.ts.dimensions)
 #case: browse xtc frames
 #-----------------------
 else:
@@ -1144,6 +1233,7 @@ print "\n\nWriting outputs..."
 write_xvg_charges()
 write_xvg_potential()
 write_dx_potential()
+write_dx_charge()
 graph_charges()
 graph_potential()	
 	
