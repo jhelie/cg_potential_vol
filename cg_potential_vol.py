@@ -716,10 +716,10 @@ def calculate_density(f_index, box_dim):
 	tmp_bins_x = np.linspace(0,box_dim[0],args.sx+1)
 	tmp_bins_y = np.linspace(0,box_dim[1],args.sx+1)
 	tmp_bins_z = np.linspace(0,box_dim[2],args.sz+1)
-	delta_x = tmp_bins_x[1]-tmp_bins_x[0]
+	delta_x = tmp_bins_x[1]-tmp_bins_x[0]				#distance 2 cells along x (in Angstrom)
 	delta_y = tmp_bins_y[1]-tmp_bins_y[0]	
 	delta_z = tmp_bins_z[1]-tmp_bins_z[0]
-	nb_x = int(np.floor(args.rc*10/float(delta_x))+1)
+	nb_x = int(np.floor(args.rc*10/float(delta_x))+1)	#nb of cells along x within the cutoff distance from another cell
 	nb_y = int(np.floor(args.rc*10/float(delta_y))+1)
 	nb_z = int(np.floor(args.rc*10/float(delta_z))+1)
 
@@ -779,8 +779,13 @@ def calculate_stats():
 
  	#calculate potential (in V)
  	#-------------------
-	#calculate distance matrix
-	tmp_dist = np.zeros((2*nb_x,2*nb_y,2*nb_z))
+	#calculate "distance" matrix: this matrix represents a cube, extending +/- nb_x (resp nb_y, nb_z) in each direction,
+	#the value of each cells representing the distance from this cell to the center of the cube (the only trick is that
+	#the indexing has to be done using positive integers only)
+	#Note: the "distance" is everything in the potential expression which is not the charge (i.e. if we multiply the value
+	#of a cell in the distance matrix by a charge we obtain the value of the potential in that cell created by this charge
+	#if positioned in the center of the cube)
+	tmp_dist = np.zeros((2*nb_x,2*nb_y,2*nb_z))			
 	for nxx in range(0,2*nb_x+1):
 		for nyy in range(0,2*nb_y+1):
 			for nzz in range(0,2*nb_z+1):
@@ -815,6 +820,9 @@ def calculate_stats():
 				tmp_pot = np.multiply(tmp_q,tmp_dist)
 
 				#add sum of contributions to current voxel
+				#basically what we are doing is that we're multiplying each neighbouring charge by its "distance" from
+				#the current point so as to calculate the potential it contributes to the current cell, and then we
+				#just add all of these up
 				potential[nx,ny,nz] += np.sum(tmp_pot)
 
 				#append this to voxel
