@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(prog = 'cg_potential_vol', usage='', add_help =
 '''
 ***********************************************
 v''' + version_nb + '''
-author: Jean Helie (jean.helie@bioch.ox.ac.uk)
+author: Jean Helie (jean.helie@gmail.com)
 git: https://github.com/jhelie/cg_potential_vol
 DOI: 
 ***********************************************
